@@ -139,7 +139,8 @@ bot.command('rest', async (ctx) => {
 });
 
 
-// Авто-проверка активности с учетом реста (/check)
+// Авто-проверка активности с выбором периода (/check [период] [норма])
+// Периоды: day, week, month, all
 bot.command('check', async (ctx) => {
     try {
         const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
@@ -148,37 +149,45 @@ bot.command('check', async (ctx) => {
         }
 
         const args = ctx.message.text.split(' ');
-        const minMessages = parseInt(args[1]) || 5; // Минимальная норма сообщений (по умолчанию 5)
+        // Аргумент 1: период (day, week, month, all). По умолчанию week (неделя)
+        const period = args[1] && ['day', 'week', 'month', 'all'].includes(args[1]) ? args[1] : 'week';
+        // Аргумент 2: минимальная норма сообщений. По умолчанию 5
+        const minMessages = parseInt(args[2]) || (period === 'day' ? 2 : (period === 'week' ? 5 : 15));
+        
         const chatId = ctx.chat.id.toString();
-
         const allUsers = await User.find({});
         let lazyUsers = [];
 
+        // Переводим период на человеческий язык для отчета
+        const periodNames = { day: 'за день', week: 'за неделю', month: 'за месяц', all: 'за всё время' };
+
         allUsers.forEach(u => {
-            // Пропускаем тех, кто на ресте, или у кого нет статы в этом чате
-            if (u.isResting) return;
+            if (u.isResting) return; // Пропускаем тех, кто на ресте
 
             if (u.chats && u.chats[chatId]) {
-                if (u.chats[chatId].all < minMessages) {
-                    lazyUsers.push(u);
+                const userMessages = u.chats[chatId][period] || 0;
+                if (userMessages < minMessages) {
+                    lazyUsers.push({ user: u, count: userMessages });
                 }
+            } else {
+                // Если у пользователя вообще нет записи по этому чату
+                lazyUsers.push({ user: u, count: 0 });
             }
         });
 
         if (lazyUsers.length === 0) {
-            return ctx.reply("✅ Все резиденты активны или находятся на ресте! Чистка не требуется.");
+            return ctx.reply(`✅ Все активны ${periodNames[period]} или находятся на ресте! Чистка не нужна.`);
         }
 
-        let list = `🧹 **Кандидаты на вылет (набрали меньше ${minMessages} сообщ.):**\n*(Те, кто на ресте — защищены)*\n\n`;
-        lazyUsers.forEach(u => {
-            let msgs = (u.chats && u.chats[chatId]) ? u.chats[chatId].all : 0;
-            list += `👤 @${u.username} — ${msgs} сообщ.\n`;
+        let list = `🧹 **Кандидаты на вылет (${periodNames[period]}, меньше ${minMessages} сообщ.):**\n*(Те, кто на ресте — защищены)*\n\n`;
+        lazyUsers.forEach(item => {
+            list += `👤 @${item.user.username || 'Без юзернейма'} — ${item.count} сообщ.\n`;
         });
         
         ctx.reply(list, {
             parse_mode: "Markdown",
             reply_markup: {
-                inline_keyboard: [[{ text: "🔥 Выгнать неактивных", callback_data: `kick_lazy_${minMessages}` }]]
+                inline_keyboard: [[{ text: "🔥 Выгнать неактивных", callback_data: `kick_lazy_${period}_${minMessages}` }]]
             }
         });
 
@@ -189,29 +198,33 @@ bot.command('check', async (ctx) => {
 });
 
 
-// Кнопка подтверждения кика неактивных
-bot.action(/^kick_lazy_(\d+)$/, async (ctx) => {
+// Кнопка подтверждения кика с учетом периода
+bot.action(/^kick_lazy_(day|week|month|all)_(\d+)$/, async (ctx) => {
     try {
         const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
         if (member.status !== 'administrator' && member.status !== 'creator') {
             return ctx.answerCbQuery({ text: "⛔ Только для администраторов!", show_alert: true });
         }
 
-        const minMessages = parseInt(ctx.match[1]);
+        const period = ctx.match[1];
+        const minMessages = parseInt(ctx.match[2]);
         const chatId = ctx.chat.id.toString();
         const allUsers = await User.find({});
         
         let kickedCount = 0;
 
         for (let u of allUsers) {
-            if (u.isResting) continue; // Не трогаем тех, кто на ресте
+            if (u.isResting) continue;
 
-            let msgs = (u.chats && u.chats[chatId]) ? u.chats[chatId].all : 0;
-            if (msgs < minMessages) {
+            let userMessages = 0;
+            if (u.chats && u.chats[chatId]) {
+                userMessages = u.chats[chatId][period] || 0;
+            }
+
+            if (userMessages < minMessages) {
                 try {
-                    // Кикаем из чата (бан с возможностью вернуться по ссылке)
                     await ctx.telegram.banChatMember(ctx.chat.id, u.userId);
-                    await ctx.telegram.unbanChatMember(ctx.chat.id, u.userId); // Снимаем бан, оставляя просто кик
+                    await ctx.telegram.unbanChatMember(ctx.chat.id, u.userId);
                     kickedCount++;
                 } catch (err) {
                     console.log(`Не удалось кикнуть пользователя ${u.userId}:`, err);
@@ -220,13 +233,14 @@ bot.action(/^kick_lazy_(\d+)$/, async (ctx) => {
         }
 
         await ctx.answerCbQuery("Чистка завершена!");
-        await ctx.editMessageText(`✅ Авто-чистка завершена! Удалено неактивных участников: ${kickedCount}`);
+        await ctx.editMessageText(`✅ Авто-чистка (${period}) завершена! Удалено неактивных участников: ${kickedCount}`);
 
     } catch (e) {
         console.error(e);
         ctx.answerCbQuery({ text: "Произошла ошибка при чистке.", show_alert: true });
     }
 });
+
 
 
 bot.launch();
