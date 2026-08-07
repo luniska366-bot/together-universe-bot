@@ -10,8 +10,11 @@ const UserSchema = new mongoose.Schema({
     userId: { type: String, required: true, unique: true },
     username: String,
     points: { type: Number, default: 0 },
-    chats: { type: Object, default: {} }
+    chats: { type: Object, default: {} },
+    warnings: { type: Object, default: {} },
+    isResting: { type: Boolean, default: false } // Статус отдыха/реста
 });
+
 
 const User = mongoose.model('User', UserSchema);
 
