@@ -184,11 +184,23 @@
         <div class="card"><p data-i18n="eventsSoon">События и челленджи в разработке.</p></div>
     </div>
 
-    <!-- Топы -->
+        <!-- Топы -->
     <div id="tops" class="section">
         <h3 style="margin-top: 0;" data-i18n="topsTitle">🏆 Топы активов</h3>
-        <div class="card"><p>🥇 Макар — 🌟 1250 очков</p></div>
+        
+        <!-- Кнопки выбора периода -->
+        <div style="display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px;">
+            <button onclick="loadLeaderboard('day')" style="font-size: 11px; padding: 4px 8px;">☀️ День</button>
+            <button onclick="loadLeaderboard('week')" style="font-size: 11px; padding: 4px 8px;">⚡ Неделя</button>
+            <button onclick="loadLeaderboard('month')" style="font-size: 11px; padding: 4px 8px;">🌙 Месяц</button>
+            <button onclick="loadLeaderboard('all')" style="font-size: 11px; padding: 4px 8px;" class="active">🌍 Всё время</button>
+        </div>
+
+        <div id="topsContainer">
+            <div class="card">Нажми период, чтобы загрузить чарт... 🎶</div>
+        </div>
     </div>
+
 
     <!-- Профиль и Настройки -->
     <div id="profile" class="section">
@@ -734,6 +746,49 @@
                 }
             });
         }
+
+                // Функция подгрузки топов с бэкенда бота
+        async function loadLeaderboard(type = 'all') {
+            try {
+                let container = document.getElementById('topsContainer');
+                container.innerHTML = '<div class="card">Загрузка хит-парада... 🎶</div>';
+                
+                // Проверяем, в чате ли открыт Mini App, иначе берем global
+                let chatId = tg.initDataUnsafe?.chat?.id || 'global';
+                
+                // ⚠️ УКАЖИ СЮДА ССЫЛКУ НА СВОЙ СЕРВЕР НА SPRINTHOST (например: https:// твой-домен.ru)
+                let serverUrl = ""; 
+let response = await fetch(`${serverUrl}/api/top?type=${type}&chat_id=${chatId}`);
+ 
+                
+                let response = await fetch(`${serverUrl}/api/top?type=${type}&chat_id=${chatId}`);
+                let leaders = await response.json();
+                
+                container.innerHTML = '';
+                
+                if (!leaders || leaders.length === 0) {
+                    container.innerHTML = '<div class="card">Пока нет данных для чарта! 📭</div>';
+                    return;
+                }
+                
+                leaders.forEach((user, index) => {
+                    let medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+                    container.innerHTML += `
+                        <div class="card" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span>${medal} <b>@${user.username}</b></span>
+                            <span>💬 ${user.message_count} сообщ.</span>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                console.error("Не удалось загрузить топы:", e);
+                document.getElementById('topsContainer').innerHTML = '<div class="card">Ошибка подключения к чартам ❌</div>';
+            }
+        }
+
+        // Автоматически подгружаем общий топ при переходе на вкладку топов
+        // Можешь также вызвать loadLeaderboard('all') при старте, если нужно
+
     </script>
 </body>
 </html>
