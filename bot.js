@@ -9,8 +9,8 @@ http.createServer((req, res) => {
 // Токен интегрирован
 const bot = new Telegraf("8708472061:AAGsyYm8RhgDlqpyeEiGwYlbnXFZwKdTI2M");
 
-const MINI_APP_URL = "[https://luniska366-bot.github.io/together-universe-bot/]";
-https
+const MINI_APP_URL = "https://luniska366-bot.github.io/together-universe-bot/";
+
 bot.start((ctx) => {
     const userName = ctx.from.first_name || "резидент";
     
