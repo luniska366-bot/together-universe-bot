@@ -1,22 +1,51 @@
 const { Telegraf } = require('telegraf');
 const express = require('express');
 const cors = require('cors');
-const { trackMessage, User } = require('./db');
+const { User } = require('./db'); // Твоя готовая база данных
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// API эндпоинт для отдачи топов в Mini App
+// Эндпоинт, который забирает данные из MongoDB и отдает топы
 app.get('/api/top', async (req, res) => {
     try {
-        const { type = 'all', chat_id } = req.query;
+        const { type = 'all' } = req.query;
         const allUsers = await User.find({});
         
         let usersList = [];
         
         allUsers.forEach(u => {
             let count = 0;
+            if (u.chats) {
+                Object.values(u.chats).forEach(chatData => {
+                    count += chatData[type] || chatData['all'] || 0;
+                });
+            }
+            
+            if (count > 0) {
+                usersList.push({
+                    username: u.username || 'Резидент',
+                    message_count: count
+                });
+            }
+        });
+
+        // Сортируем от самых активных к менее активным
+        usersList.sort((a, b) => b.message_count - a.message_count);
+        
+        // Возвращаем топ-10
+        res.json(usersList.slice(0, 10));
+    } catch (e) {
+        console.error("Ошибка при получении топов из базы:", e);
+        res.status(500).json({ error: "DB error" });
+    }
+});
+
+app.listen(3000, () => {
+    console.log('API для топов запущен и слушает базу данных!');
+});
+
             // Если запрашивают топ конкретного чата
             if (chat_id && chat_id !== 'global' && u.chats && u.chats[chat_id]) {
                 count = u.chats[chat_id][type] || u.chats[chat_id]['all'] || 0;
