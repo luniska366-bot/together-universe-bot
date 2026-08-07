@@ -70,19 +70,19 @@
             transform: scale(0.95);
         }
         
-        /* Стеклянный островок снизу с железобетонным позиционированием */
+        /* Стеклянный островок снизу на 5 кнопок */
         .glass-dock {
             position: fixed !important;
             bottom: 15px !important;
             left: 50% !important;
             transform: translateX(-50%) !important;
             display: flex !important;
-            gap: 6px;
+            gap: 4px;
             background: rgba(22, 27, 34, 0.85) !important;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 8px 12px;
+            padding: 8px 10px;
             border-radius: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             z-index: 999999 !important;
@@ -98,9 +98,9 @@
             background: transparent !important;
             border: none !important;
             color: var(--text-color) !important;
-            padding: 8px 12px;
+            padding: 8px 10px;
             border-radius: 12px;
-            font-size: 13px;
+            font-size: 12px;
             white-space: nowrap;
         }
         .glass-dock button.active {
@@ -127,24 +127,11 @@
             border-radius: 8px;
             margin-bottom: 10px;
         }
-        #error-log {
-            background: #ff000033;
-            border: 1px solid #f85149;
-            color: #f85149;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            display: none;
-            font-size: 12px;
-        }
     </style>
 </head>
 <body data-theme="dark">
 
-    <!-- Блок для вывода ошибок прямо на экран -->
-    <div id="error-log"></div>
-
-    <!-- Шапка профиля -->
+    <!-- Чистая шапка профиля без лишних кнопок -->
     <div class="header">
         <div class="profile-info">
             <div class="avatar" id="avatarLetter">M</div>
@@ -153,43 +140,36 @@
                 <div style="font-size: 12px; opacity: 0.8;">🌟 <span id="userBalance">1250</span> очков</div>
             </div>
         </div>
-        <button onclick="switchTab('profile', document.getElementById('tabProfileBtn'))">⚙️</button>
     </div>
 
-    <!-- Главная (Лента новостей) -->
+    <!-- Главная -->
     <div id="feed" class="section active">
         <h3>Новостная лента</h3>
         <div class="card">
-            <h4 style="margin: 0 0 5px 0;">🚀 Островок успешно активирован!</h4>
-            <p style="margin: 0; font-size: 14px; opacity: 0.9;">Если ты видишь этот текст и плавающее меню внизу — значит, стили применились.</p>
+            <h4 style="margin: 0 0 5px 0;">🚀 Together Universe Hub</h4>
+            <p style="margin: 0; font-size: 14px; opacity: 0.9;">Интерфейс полностью обновлен.</p>
         </div>
     </div>
 
     <!-- Магазин -->
     <div id="shop" class="section">
         <h3>Магазин кастомизации</h3>
-        <div class="card">
-            <p>Скоро здесь появятся товары!</p>
-        </div>
+        <div class="card"><p>Товары скоро появятся!</p></div>
     </div>
 
     <!-- Ивенты -->
     <div id="events" class="section">
         <h3>Активные ивенты</h3>
-        <div class="card">
-            <p>События скоро начнутся.</p>
-        </div>
+        <div class="card"><p>События в разработке.</p></div>
     </div>
 
     <!-- Топы -->
     <div id="tops" class="section">
         <h3>Топы активов</h3>
-        <div class="card">
-            <p>🥇 Макар — 🌟 1250 очков</p>
-        </div>
+        <div class="card"><p>🥇 Макар — 🌟 1250 очков</p></div>
     </div>
 
-    <!-- Профиль -->
+    <!-- Профиль и Настройки -->
     <div id="profile" class="section">
         <h3>Профиль и Настройки</h3>
         <div class="card">
@@ -201,23 +181,16 @@
         </div>
     </div>
 
-    <!-- Нижний плавающий островок -->
+    <!-- Нижний плавающий островок на 5 вкладок -->
     <div class="glass-dock">
         <button class="active" onclick="switchTab('feed', this)">📰 Главная</button>
         <button onclick="switchTab('shop', this)">🛍 Магазин</button>
         <button onclick="switchTab('events', this)">⚡ Ивенты</button>
         <button onclick="switchTab('tops', this)">🏆 Топы</button>
-        <button id="tabProfileBtn" onclick="switchTab('profile', this)">👤 Профиль</button>
+        <button onclick="switchTab('profile', this)">👤 Профиль</button>
     </div>
 
     <script>
-        // Перехват ошибок в коде для вывода на экран
-        window.onerror = function(msg, url, line) {
-            let errBox = document.getElementById('error-log');
-            errBox.style.display = 'block';
-            errBox.innerHTML = `<b>Ошибка в JS:</b> ${msg}<br>Строка: ${line}`;
-        };
-
         let tg = window.Telegram.WebApp;
         tg.expand();
         
