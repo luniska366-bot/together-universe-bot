@@ -14,38 +14,53 @@ const MAIN_CHANNEL = "@togetheruniversechats";
 bot.start(async (ctx) => {
     const userId = ctx.from.id;
     const username = ctx.from.username;
+    const isGroup = ctx.chat.type !== 'private';
 
-    try {
-        const member = await bot.telegram.getChatMember(MAIN_CHANNEL, userId);
-        if (member.status === 'left' || member.status === 'kicked') {
-            return ctx.reply(
-                `🌌 Чтобы открыть паспорт Together Universe, подпишись на наше главное сообщество:\nhttps://t.me/togetheruniversechats`,
-                { disable_web_page_preview: true }
-            );
+    // В личке проверяем подписку на канал
+    if (!isGroup) {
+        try {
+            const member = await bot.telegram.getChatMember(MAIN_CHANNEL, userId);
+            if (member.status === 'left' || member.status === 'kicked') {
+                return ctx.reply(
+                    `🌌 Чтобы открыть паспорт Together Universe, подпишись на наше главное сообщество:\nhttps://t.me/togetheruniversechats`,
+                    { disable_web_page_preview: true }
+                );
+            }
+        } catch (e) {
+            console.log("Ошибка проверки подписки:", e);
         }
-    } catch (e) {
-        console.log("Ошибка проверки подписки:", e);
     }
 
     const isNew = registerUser(userId, username);
     const userName = ctx.from.first_name || "резидент";
 
+    // Если это группа — отправляем просто текст без WebApp кнопок, чтобы не было ошибок
+    if (isGroup) {
+        return ctx.reply(
+            `🌌 Бот Together Universe активирован в этом чате!\n` +
+            `Пишите сообщения, чтобы копить очки. Используйте команду «кто я», чтобы посмотреть свой паспорт, и /topall для топов (доступно админам).`,
+            { parse_mode: "Markdown" }
+        );
+    }
+
+сть    // В личке даем кнопку Mini App
     return ctx.reply(
         `Привет, **${userName}**! 🌌\n\n` +
         (isNew ? `✨ Твой паспорт Юниверса успешно создан!\n\n` : `Твой паспорт Юниверса уже активен!\n\n`) +
         `Добро пожаловать в официальный хаб **Together Universe**.`,
         {
             parse_mode: "Markdown",
-            ...Markup.inlineKeyboard([
-                [Markup.button.webApp("✨ Открыть Together Universe", MINI_APP_URL)]
-            ])
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: "✨ Открыть Together Universe", web_app: { url: MINI_APP_URL } }]
+                ]
+            }
         }
     );
 });
 
 // Слушаем все текстовые сообщения в чатах для статистики (как Ирис)
 bot.on('text', (ctx, next) => {
-    // Игнорируем команды (начинающиеся с /)
     if (ctx.message.text.startsWith('/')) return next();
 
     const userId = ctx.from.id;
@@ -64,7 +79,7 @@ bot.hears(/^кто я$/i, (ctx) => {
     const user = db[userId];
 
     if (!user || !user.chats[chatId]) {
-        return ctx.reply(`🪪 У тебя еще нет статистики в этом чате. Напиши что-нибудь или пройди /start!`);
+        return ctx.reply(`🪪 У тебя еще нет статистики в этом чате. Напиши что-нибудь!`);
     }
 
     const stats = user.chats[chatId];
@@ -73,7 +88,7 @@ bot.hears(/^кто я$/i, (ctx) => {
         `👤 Резидент: @${user.username}\n` +
         `🌟 Очки (общее): ${user.points}\n` +
         `💬 Сообщений за сутки: ${stats.day}\n` +
-        `💬 Сообщений за неделю: ${stats.week}\n` +
+        `💬 Сообщений за неделю: ${stats.week}\.week\n` +
         `💬 Сообщений за месяц: ${stats.month}\n` +
         `💬 Сообщений за всё время: ${stats.all}`,
         { parse_mode: "Markdown" }
@@ -82,7 +97,6 @@ bot.hears(/^кто я$/i, (ctx) => {
 
 // Админские топы чата
 bot.hears(/^\/top(day|week|month|all)?$/i, async (ctx) => {
-    // Проверка на админа чата
     try {
         const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
         if (member.status !== 'administrator' && member.status !== 'creator') {
@@ -127,4 +141,4 @@ bot.hears(/^\/top(day|week|month|all)?$/i, async (ctx) => {
 });
 
 bot.launch();
-console.log("Бот с трекингом сообщений запущен! 🚀");
+console.log("Бот успешно запущен без ошибок кнопок! 🚀");
