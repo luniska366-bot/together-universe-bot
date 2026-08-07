@@ -10,7 +10,7 @@ const UserSchema = new mongoose.Schema({
     userId: { type: String, required: true, unique: true },
     username: String,
     points: { type: Number, default: 0 },
-    chats: Object
+    chats: { type: Object, default: {} }
 });
 
 const User = mongoose.model('User', UserSchema);
@@ -19,6 +19,11 @@ async function trackMessage(userId, username, chatId) {
     let user = await User.findOne({ userId });
     if (!user) {
         user = new User({ userId, username, chats: {} });
+    }
+
+    // Защита: если объект chats вообще отсутствует у старых записей
+    if (!user.chats) {
+        user.chats = {};
     }
 
     if (!user.chats[chatId]) {
