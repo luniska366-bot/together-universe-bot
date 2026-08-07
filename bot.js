@@ -1,5 +1,11 @@
 const { Telegraf, Markup } = require('telegraf');
 
+const http = require('http');
+http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Bot is running!');
+}).listen(process.env.PORT || 3000);
+
 // Токен интегрирован
 const bot = new Telegraf("8708472061:AAGsyYm8RhgDlqpyeEiGwYlbnXFZwKdTI2M");
 
