@@ -242,6 +242,23 @@ bot.action(/^kick_lazy_(day|week|month|all)_(\d+)$/, async (ctx) => {
 });
 
 
+// Короткие команды для быстрой проверки без аргументов
+bot.command('checkday', async (ctx) => {
+    ctx.message.text = '/check day 10';
+    bot.handleUpdate(ctx.update);
+});
+
+bot.command('checkweek', async (ctx) => {
+    ctx.message.text = '/check week 70';
+    bot.handleUpdate(ctx.update);
+});
+
+bot.command('checkmonth', async (ctx) => {
+    ctx.message.text = '/check month 150';
+    bot.handleUpdate(ctx.update);
+});
+
+
 
 bot.launch();
 console.log("Бот запущен с MongoDB!");
