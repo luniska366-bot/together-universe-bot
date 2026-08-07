@@ -28,8 +28,7 @@
             color: var(--text-color);
             margin: 0;
             padding: 15px;
-            padding-bottom: 90px; /* Отступ снизу под плавающий островок */
-            transition: background 0.3s, color 0.3s;
+            padding-bottom: 100px;
         }
         .header {
             display: flex;
@@ -58,10 +57,6 @@
             color: white;
             font-size: 18px;
         }
-        .controls {
-            display: flex;
-            gap: 8px;
-        }
         button {
             background: var(--card-bg);
             color: var(--text-color);
@@ -75,43 +70,42 @@
             transform: scale(0.95);
         }
         
-        /* Плавающий стеклянный островок снизу */
+        /* Стеклянный островок снизу с железобетонным позиционированием */
         .glass-dock {
-            position: fixed;
-            bottom: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
+            position: fixed !important;
+            bottom: 15px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            display: flex !important;
             gap: 6px;
-            background: rgba(22, 27, 34, 0.75);
+            background: rgba(22, 27, 34, 0.85) !important;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             padding: 8px 12px;
             border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 999999 !important;
+            width: max-content;
             max-width: 95%;
             overflow-x: auto;
         }
         [data-theme="light"] .glass-dock {
-            background: rgba(255, 255, 255, 0.75);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.85) !important;
+            border: 1px solid rgba(0, 0, 0, 0.15);
         }
         .glass-dock button {
-            background: transparent;
-            border: none;
-            color: var(--text-color);
+            background: transparent !important;
+            border: none !important;
+            color: var(--text-color) !important;
             padding: 8px 12px;
             border-radius: 12px;
             font-size: 13px;
             white-space: nowrap;
-            transition: background 0.2s, color 0.2s;
         }
         .glass-dock button.active {
-            background: var(--accent);
-            color: white;
+            background: var(--accent) !important;
+            color: white !important;
             font-weight: 600;
         }
 
@@ -133,14 +127,22 @@
             border-radius: 8px;
             margin-bottom: 10px;
         }
-        .timer {
+        #error-log {
+            background: #ff000033;
+            border: 1px solid #f85149;
             color: #f85149;
-            font-weight: bold;
-            font-size: 13px;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+            font-size: 12px;
         }
     </style>
 </head>
 <body data-theme="dark">
+
+    <!-- Блок для вывода ошибок прямо на экран -->
+    <div id="error-log"></div>
 
     <!-- Шапка профиля -->
     <div class="header">
@@ -151,58 +153,47 @@
                 <div style="font-size: 12px; opacity: 0.8;">🌟 <span id="userBalance">1250</span> очков</div>
             </div>
         </div>
-        <div class="controls">
-            <button onclick="switchTab('profile', document.getElementById('tabProfileBtn'))">⚙️</button>
-        </div>
+        <button onclick="switchTab('profile', document.getElementById('tabProfileBtn'))">⚙️</button>
     </div>
 
     <!-- Главная (Лента новостей) -->
     <div id="feed" class="section active">
-        <h3 id="t_feedTitle">Новостная лента</h3>
+        <h3>Новостная лента</h3>
         <div class="card">
-            <h4 style="margin: 0 0 5px 0;">🚀 Запуск Together Universe Mini App!</h4>
-            <p style="margin: 0; font-size: 14px; opacity: 0.9;">Мы официально выкатили обновление интерфейса со стеклянным островком. Теперь всё летает прямо в Telegram.</p>
+            <h4 style="margin: 0 0 5px 0;">🚀 Островок успешно активирован!</h4>
+            <p style="margin: 0; font-size: 14px; opacity: 0.9;">Если ты видишь этот текст и плавающее меню внизу — значит, стили применились.</p>
         </div>
     </div>
 
     <!-- Магазин -->
     <div id="shop" class="section">
-        <h3 id="t_shopTitle">Магазин кастомизации</h3>
-        <div class="card" style="border-color: #f85149;">
-            <div style="display: flex; justify-content: space-between;">
-                <strong>⚡ Неоновый интерфейс (Лимитка)</strong>
-                <span class="timer">⏳ 04:12:50</span>
-            </div>
-            <p style="font-size: 13px; opacity: 0.8; margin: 5px 0;">Временный эксклюзивный скин приложения.</p>
-            <button style="background: #2ea043; color: white; border: none; width: 100%; margin-top: 5px;" onclick="alert('Куплено!')">Купить за 500 🌟</button>
+        <h3>Магазин кастомизации</h3>
+        <div class="card">
+            <p>Скоро здесь появятся товары!</p>
         </div>
     </div>
 
     <!-- Ивенты -->
     <div id="events" class="section">
-        <h3 id="t_evTitle">Активные ивенты</h3>
+        <h3>Активные ивенты</h3>
         <div class="card">
-            <h4 style="margin: 0 0 5px 0;">🔥 Игровой вечер Minecraft & Wuthering Waves</h4>
-            <p style="margin: 0; font-size: 14px; opacity: 0.9;">Собираемся на сервере, заходим в голосовой чат.</p>
+            <p>События скоро начнутся.</p>
         </div>
     </div>
 
     <!-- Топы -->
     <div id="tops" class="section">
-        <h3 id="t_topsTitle">Топы активов</h3>
+        <h3>Топы активов</h3>
         <div class="card">
-            <p style="margin: 0;">🥇 <b>Макар</b> — 🌟 1250 очков</p>
-        </div>
-        <div class="card" style="opacity: 0.7;">
-            <p style="margin: 0;">🥈 <i>Резидент #2</i> — 🌟 820 очков</p>
+            <p>🥇 Макар — 🌟 1250 очков</p>
         </div>
     </div>
 
-    <!-- Профиль и настройки -->
+    <!-- Профиль -->
     <div id="profile" class="section">
-        <h3 id="t_profTitle">Профиль и Настройки</h3>
+        <h3>Профиль и Настройки</h3>
         <div class="card">
-            <p style="margin: 0 0 10px 0;"><b>Паспорт Юниверса</b> активен. Статус: Резидент ✨</p>
+            <p style="margin: 0 0 10px 0;"><b>Паспорт Юниверса</b> активен. ✨</p>
             <div style="display: flex; gap: 10px; margin-top: 10px;">
                 <button onclick="toggleTheme()">🌙/☀️ Тема</button>
                 <button onclick="toggleLang()">🌐 <span id="langLabel">RU</span></button>
@@ -210,7 +201,7 @@
         </div>
     </div>
 
-    <!-- Нижний плавающий островок (Glassmorphism Dock) -->
+    <!-- Нижний плавающий островок -->
     <div class="glass-dock">
         <button class="active" onclick="switchTab('feed', this)">📰 Главная</button>
         <button onclick="switchTab('shop', this)">🛍 Магазин</button>
@@ -220,7 +211,13 @@
     </div>
 
     <script>
-        // Инициализация Telegram Web App
+        // Перехват ошибок в коде для вывода на экран
+        window.onerror = function(msg, url, line) {
+            let errBox = document.getElementById('error-log');
+            errBox.style.display = 'block';
+            errBox.innerHTML = `<b>Ошибка в JS:</b> ${msg}<br>Строка: ${line}`;
+        };
+
         let tg = window.Telegram.WebApp;
         tg.expand();
         
@@ -230,42 +227,22 @@
             document.getElementById('avatarLetter').innerText = (user.first_name || "M")[0].toUpperCase();
         }
 
-        // Переключение вкладок
         function switchTab(tabId, btn) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.glass-dock button').forEach(b => b.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            btn.classList.add('active');
+            if(btn) btn.classList.add('active');
         }
 
-        // Переключение тем
         function toggleTheme() {
             let body = document.body;
-            if (body.getAttribute('data-theme') === 'dark') {
-                body.setAttribute('data-theme', 'light');
-            } else {
-                body.setAttribute('data-theme', 'dark');
-            }
+            body.setAttribute('data-theme', body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
         }
 
-        // Переключатель языков (RU/EN)
         let currentLang = 'ru';
         function toggleLang() {
             currentLang = currentLang === 'ru' ? 'en' : 'ru';
             document.getElementById('langLabel').innerText = currentLang.toUpperCase();
-            if(currentLang === 'en') {
-                document.getElementById('t_feedTitle').innerText = "News Feed";
-                document.getElementById('t_shopTitle').innerText = "Customization Shop";
-                document.getElementById('t_evTitle').innerText = "Active Events";
-                document.getElementById('t_topsTitle').innerText = "Leaderboard";
-                document.getElementById('t_profTitle').innerText = "Profile & Settings";
-            } else {
-                document.getElementById('t_feedTitle').innerText = "Новостная лента";
-                document.getElementById('t_shopTitle').innerText = "Магазин кастомизации";
-                document.getElementById('t_evTitle').innerText = "Активные ивенты";
-                document.getElementById('t_topsTitle').innerText = "Топы активов";
-                document.getElementById('t_profTitle').innerText = "Профиль и Настройки";
-            }
         }
     </script>
 </body>
