@@ -1,14 +1,61 @@
 const { Telegraf } = require('telegraf');
-const http = require('http');
+const express = require('express');
+const cors = require('cors');
 const { trackMessage, User } = require('./db');
 
-http.createServer((req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Bot is running!');
-}).listen(process.env.PORT || 3000);
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// API эндпоинт для отдачи топов в Mini App
+app.get('/api/top', async (req, res) => {
+    try {
+        const { type = 'all', chat_id } = req.query;
+        const allUsers = await User.find({});
+        
+        let usersList = [];
+        
+        allUsers.forEach(u => {
+            let count = 0;
+            // Если запрашивают топ конкретного чата
+            if (chat_id && chat_id !== 'global' && u.chats && u.chats[chat_id]) {
+                count = u.chats[chat_id][type] || u.chats[chat_id]['all'] || 0;
+            } else {
+                // Глобальный топ по всем чатам пользователя
+                if (u.chats) {
+                    Object.values(u.chats).forEach(chatData => {
+                        count += chatData[type] || chatData['all'] || 0;
+                    });
+                }
+            }
+            
+            if (count > 0) {
+                usersList.push({
+                    username: u.username || 'Резидент',
+                    message_count: count
+                });
+            }
+        });
+
+        // Сортируем по убыванию (от большего к меньшему)
+        usersList.sort((a, b) => b.message_count - a.message_count);
+        
+        // Возвращаем топ-10
+        res.json(usersList.slice(0, 10));
+    } catch (e) {
+        console.error("Ошибка API топов:", e);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Сервер и API запущены на порту ${PORT}!`);
+});
 
 const bot = new Telegraf("8708472061:AAGsyYm8RhgDlqpyeEiGwYlbnXFZwKdTI2M");
 const MINI_APP_URL = "https://luniska366-bot.github.io/together-universe-bot/";
+
 
 // Команда /start
 bot.start(async (ctx) => {
