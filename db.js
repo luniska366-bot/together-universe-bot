@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const MONGO_URI = "mongodb+srv://luniska366_db_user:France2021@togetheruniverse.jjuirxp.mongodb.net/TogetherUniverse?retryWrites=true&w=majority";
+const MONGO_URI = "mongodb+srv://luniska366_db_user:france2021@togetheruniverse.jjuirxp.mongodb.net/TogetherUniverse?retryWrites=true&w=majority";
 
 mongoose.connect(MONGO_URI)
     .then(() => console.log("Подключено к MongoDB!"))
