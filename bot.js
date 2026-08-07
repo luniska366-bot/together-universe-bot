@@ -103,5 +103,131 @@ bot.on('text', (ctx, next) => {
     return next();
 });
 
+// Включить/выключить статус отдыха (/rest)
+bot.command('rest', async (ctx) => {
+    try {
+        const userId = ctx.from.id;
+        const member = await ctx.telegram.getChatMember(ctx.chat.id, userId);
+        
+        // Админ может отправить команду в ответ на сообщение другого человека, чтобы отправить того в рест
+        let targetId = userId;
+        let targetName = ctx.from.first_name;
+
+        if (ctx.message.reply_to_message && (member.status === 'administrator' || member.status === 'creator')) {
+            targetId = ctx.message.reply_to_message.from.id;
+            targetName = ctx.message.reply_to_message.from.username || ctx.message.reply_to_message.from.first_name;
+        }
+
+        let user = await User.findOne({ userId: targetId });
+        if (!user) {
+            user = new User({ userId: targetId, username: targetName, chats: {}, isResting: true });
+        } else {
+            user.isResting = !user.isResting; // Переключаем статус (если был на ресте — снимаем, если нет — ставим)
+        }
+
+        await user.save();
+
+        if (user.isResting) {
+            return ctx.reply(`🏖️ Пользователь @${targetName} отправлен на **рест (отдых)**. Чистка его не тронет!`, { parse_mode: "Markdown" });
+        } else {
+            return ctx.reply(`⚡ Пользователь @${targetName} вернулся с отдыха и снова участвует в проверках активности.`);
+        }
+    } catch (e) {
+        console.error(e);
+        ctx.reply("Ошибка при изменении статуса реста.");
+    }
+});
+
+
+// Авто-проверка активности с учетом реста (/check)
+bot.command('check', async (ctx) => {
+    try {
+        const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
+        if (member.status !== 'administrator' && member.status !== 'creator') {
+            return ctx.reply("⛔ Проверку активности могут запускать только администраторы!");
+        }
+
+        const args = ctx.message.text.split(' ');
+        const minMessages = parseInt(args[1]) || 5; // Минимальная норма сообщений (по умолчанию 5)
+        const chatId = ctx.chat.id.toString();
+
+        const allUsers = await User.find({});
+        let lazyUsers = [];
+
+        allUsers.forEach(u => {
+            // Пропускаем тех, кто на ресте, или у кого нет статы в этом чате
+            if (u.isResting) return;
+
+            if (u.chats && u.chats[chatId]) {
+                if (u.chats[chatId].all < minMessages) {
+                    lazyUsers.push(u);
+                }
+            }
+        });
+
+        if (lazyUsers.length === 0) {
+            return ctx.reply("✅ Все резиденты активны или находятся на ресте! Чистка не требуется.");
+        }
+
+        let list = `🧹 **Кандидаты на вылет (набрали меньше ${minMessages} сообщ.):**\n*(Те, кто на ресте — защищены)*\n\n`;
+        lazyUsers.forEach(u => {
+            let msgs = (u.chats && u.chats[chatId]) ? u.chats[chatId].all : 0;
+            list += `👤 @${u.username} — ${msgs} сообщ.\n`;
+        });
+        
+        ctx.reply(list, {
+            parse_mode: "Markdown",
+            reply_markup: {
+                inline_keyboard: [[{ text: "🔥 Выгнать неактивных", callback_data: `kick_lazy_${minMessages}` }]]
+            }
+        });
+
+    } catch (e) {
+        console.error(e);
+        ctx.reply("Ошибка при запуске проверки.");
+    }
+});
+
+
+// Кнопка подтверждения кика неактивных
+bot.action(/^kick_lazy_(\d+)$/, async (ctx) => {
+    try {
+        const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
+        if (member.status !== 'administrator' && member.status !== 'creator') {
+            return ctx.answerCbQuery({ text: "⛔ Только для администраторов!", show_alert: true });
+        }
+
+        const minMessages = parseInt(ctx.match[1]);
+        const chatId = ctx.chat.id.toString();
+        const allUsers = await User.find({});
+        
+        let kickedCount = 0;
+
+        for (let u of allUsers) {
+            if (u.isResting) continue; // Не трогаем тех, кто на ресте
+
+            let msgs = (u.chats && u.chats[chatId]) ? u.chats[chatId].all : 0;
+            if (msgs < minMessages) {
+                try {
+                    // Кикаем из чата (бан с возможностью вернуться по ссылке)
+                    await ctx.telegram.banChatMember(ctx.chat.id, u.userId);
+                    await ctx.telegram.unbanChatMember(ctx.chat.id, u.userId); // Снимаем бан, оставляя просто кик
+                    kickedCount++;
+                } catch (err) {
+                    console.log(`Не удалось кикнуть пользователя ${u.userId}:`, err);
+                }
+            }
+        }
+
+        await ctx.answerCbQuery("Чистка завершена!");
+        await ctx.editMessageText(`✅ Авто-чистка завершена! Удалено неактивных участников: ${kickedCount}`);
+
+    } catch (e) {
+        console.error(e);
+        ctx.answerCbQuery({ text: "Произошла ошибка при чистке.", show_alert: true });
+    }
+});
+
+
 bot.launch();
 console.log("Бот запущен с MongoDB!");
