@@ -17,7 +17,6 @@ bot.start(async (ctx) => {
     const isGroup = ctx.chat.type !== 'private';
 
     if (!isGroup) {
-        // Регистрация в базе при старте в личке
         let user = await User.findOne({ userId });
         if (!user) {
             await new User({ userId, username, chats: {} }).save();
@@ -103,13 +102,134 @@ bot.on('text', (ctx, next) => {
     return next();
 });
 
+// Система предов (/warn, /unwarn, /warns)
+bot.command('warn', async (ctx) => {
+    try {
+        const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
+        if (member.status !== 'administrator' && member.status !== 'creator') {
+            return ctx.reply("⛔ Эта команда только для администраторов!");
+        }
+
+        if (!ctx.message.reply_to_message) {
+            return ctx.reply("⚠️ Ответь этой командой на сообщение нарушителя, чтобы выдать пред!");
+        }
+
+        const targetUser = ctx.message.reply_to_message.from;
+        const targetId = targetUser.id;
+        const targetUsername = targetUser.username || targetUser.first_name;
+        const chatId = ctx.chat.id.toString();
+
+        let user = await User.findOne({ userId: targetId });
+        if (!user) {
+            user = new User({ userId: targetId, username: targetUsername, chats: {}, warnings: {} });
+        }
+
+        if (!user.warnings) user.warnings = {};
+        if (!user.warnings[chatId]) user.warnings[chatId] = 0;
+
+        user.warnings[chatId] += 1;
+        let currentWarns = user.warnings[chatId];
+
+        user.markModified('warnings');
+        await user.save();
+
+        ctx.reply(`⚠️ Администратор выдал предупреждение пользователю @${targetUsername}.\n📌 Предов в этом чате: ${currentWarns}/3`);
+
+        if (currentWarns >= 3) {
+            try {
+                await ctx.telegram.restrictChatMember(ctx.chat.id, targetId, {
+                    permissions: { can_send_messages: false }
+                });
+                ctx.reply(`🚫 У @${targetUsername} накопилось 3 предупреждения, выдан мут!`);
+            } catch (e) {
+                console.log("Не удалось замутить:", e);
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        ctx.reply("Ошибка при выдаче предупреждения.");
+    }
+});
+
+bot.command('unwarn', async (ctx) => {
+    try {
+        const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
+        if (member.status !== 'administrator' && member.status !== 'creator') {
+            return ctx.reply("⛔ Эта команда только для администраторов!");
+        }
+
+        if (!ctx.message.reply_to_message) {
+            return ctx.reply("⚠️ Ответь на сообщение пользователя, чтобы снять пред.");
+        }
+
+        const targetId = ctx.message.reply_to_message.from.id;
+        const chatId = ctx.chat.id.toString();
+
+        let user = await User.findOne({ userId: targetId });
+        if (user && user.warnings && user.warnings[chatId] > 0) {
+            user.warnings[chatId] -= 1;
+            user.markModified('warnings');
+            await user.save();
+            return ctx.reply(`✅ Снят один пред. Текущее количество: ${user.warnings[chatId]}`);
+        } else {
+            return ctx.reply("У пользователя и так нет предупреждений в этом чате.");
+        }
+    } catch (e) {
+        console.error(e);
+        ctx.reply("Ошибка при снятии преда.");
+    }
+});
+
+bot.command('warns', async (ctx) => {
+    const userId = ctx.from.id;
+    const chatId = ctx.chat.id.toString();
+
+    let user = await User.findOne({ userId });
+    let warns = (user && user.warnings && user.warnings[chatId]) ? user.warnings[chatId] : 0;
+
+    ctx.reply(`📌 Ваши предупреждения в этом чате: ${warns} из 3.`);
+});
+
+// Система быстрой чистки сообщений (/clear)
+bot.command(['clear', 'clean'], async (ctx) => {
+    try {
+        const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
+        if (member.status !== 'administrator' && member.status !== 'creator') {
+            return ctx.reply("⛔ Чистить чат могут только администраторы!");
+        }
+
+        if (!ctx.message.reply_to_message) {
+            return ctx.reply("⚠️ Чтобы очистить сообщения, ответь командой `/clear` на сообщение, начиная с которого нужно всё удалить.", { parse_mode: "Markdown" });
+        }
+
+        const replyId = ctx.message.reply_to_message.message_id;
+        const currentId = ctx.message.message_id;
+
+        await ctx.deleteMessage(currentId).catch(() => {});
+        
+        for (let msgId = currentId - 1; msgId >= replyId; msgId--) {
+            try {
+                await ctx.telegram.deleteMessage(ctx.chat.id, msgId);
+            } catch (err) {}
+        }
+
+        const notify = await ctx.reply("🧹 Чат успешно очищен!");
+        setTimeout(() => {
+            ctx.telegram.deleteMessage(ctx.chat.id, notify.message_id).catch(() => {});
+        }, 3000);
+
+    } catch (e) {
+        console.error(e);
+        ctx.reply("❌ Не удалось очистить чат.");
+    }
+});
+
 // Включить/выключить статус отдыха (/rest)
 bot.command('rest', async (ctx) => {
     try {
         const userId = ctx.from.id;
         const member = await ctx.telegram.getChatMember(ctx.chat.id, userId);
         
-        // Админ может отправить команду в ответ на сообщение другого человека, чтобы отправить того в рест
         let targetId = userId;
         let targetName = ctx.from.first_name;
 
@@ -122,7 +242,7 @@ bot.command('rest', async (ctx) => {
         if (!user) {
             user = new User({ userId: targetId, username: targetName, chats: {}, isResting: true });
         } else {
-            user.isResting = !user.isResting; // Переключаем статус (если был на ресте — снимаем, если нет — ставим)
+            user.isResting = !user.isResting;
         }
 
         await user.save();
@@ -138,10 +258,8 @@ bot.command('rest', async (ctx) => {
     }
 });
 
-
-// Авто-проверка активности с выбором периода (/check [период] [норма])
-// Периоды: day, week, month, all
-bot.command('check', async (ctx) => {
+// Универсальная логика проверки активности
+async function handleCheckCommand(ctx) {
     try {
         const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
         if (member.status !== 'administrator' && member.status !== 'creator') {
@@ -149,20 +267,20 @@ bot.command('check', async (ctx) => {
         }
 
         const args = ctx.message.text.split(' ');
-        // Аргумент 1: период (day, week, month, all). По умолчанию week (неделя)
         const period = args[1] && ['day', 'week', 'month', 'all'].includes(args[1]) ? args[1] : 'week';
-        // Аргумент 2: минимальная норма сообщений. По умолчанию 5
-        const minMessages = parseInt(args[2]) || (period === 'day' ? 2 : (period === 'week' ? 5 : 15));
+        
+        // Установлены новые нормы: День - 10, Неделя - 70, Месяц - 150
+        const defaultNorms = { day: 10, week: 70, month: 150, all: 200 };
+        const minMessages = parseInt(args[2]) || defaultNorms[period];
         
         const chatId = ctx.chat.id.toString();
         const allUsers = await User.find({});
         let lazyUsers = [];
 
-        // Переводим период на человеческий язык для отчета
         const periodNames = { day: 'за день', week: 'за неделю', month: 'за месяц', all: 'за всё время' };
 
         allUsers.forEach(u => {
-            if (u.isResting) return; // Пропускаем тех, кто на ресте
+            if (u.isResting) return;
 
             if (u.chats && u.chats[chatId]) {
                 const userMessages = u.chats[chatId][period] || 0;
@@ -170,7 +288,6 @@ bot.command('check', async (ctx) => {
                     lazyUsers.push({ user: u, count: userMessages });
                 }
             } else {
-                // Если у пользователя вообще нет записи по этому чату
                 lazyUsers.push({ user: u, count: 0 });
             }
         });
@@ -195,10 +312,11 @@ bot.command('check', async (ctx) => {
         console.error(e);
         ctx.reply("Ошибка при запуске проверки.");
     }
-});
+}
 
+bot.command('check', handleCheckCommand);
 
-// Кнопка подтверждения кика с учетом периода
+// Кнопка подтверждения кика
 bot.action(/^kick_lazy_(day|week|month|all)_(\d+)$/, async (ctx) => {
     try {
         const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
@@ -241,24 +359,21 @@ bot.action(/^kick_lazy_(day|week|month|all)_(\d+)$/, async (ctx) => {
     }
 });
 
-
-// Короткие команды для быстрой проверки без аргументов
-bot.command('checkday', async (ctx) => {
+// Короткие команды с поддержкой имени бота в группах (с нормами 10 / 70 / 150)
+bot.hears(/^\/checkday(@\w+)?$/, async (ctx) => {
     ctx.message.text = '/check day 10';
-    bot.handleUpdate(ctx.update);
+    return handleCheckCommand(ctx);
 });
 
-bot.command('checkweek', async (ctx) => {
+bot.hears(/^\/checkweek(@\w+)?$/, async (ctx) => {
     ctx.message.text = '/check week 70';
-    bot.handleUpdate(ctx.update);
+    return handleCheckCommand(ctx);
 });
 
-bot.command('checkmonth', async (ctx) => {
+bot.hears(/^\/checkmonth(@\w+)?$/, async (ctx) => {
     ctx.message.text = '/check month 150';
-    bot.handleUpdate(ctx.update);
+    return handleCheckCommand(ctx);
 });
-
-
 
 bot.launch();
 console.log("Бот запущен с MongoDB!");
