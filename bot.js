@@ -3,7 +3,7 @@ const { Telegraf, Markup } = require('telegraf');
 // Токен интегрирован
 const bot = new Telegraf("8708472061:AAGsyYm8RhgDlqpyeEiGwYlbnXFZwKdTI2M");
 
-const MINI_APP_URL = "https://togetheruniverse.nethouse.ru";
+const MINI_APP_URL = "[https://luniska366-bot.github.io/together-universe-bot/](https://luniska366-bot.github.io/together-universe-bot/)";
 
 bot.start((ctx) => {
     const userName = ctx.from.first_name || "резидент";
