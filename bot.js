@@ -10,42 +10,14 @@ app.use(express.json());
 // Эндпоинт, который забирает данные из MongoDB и отдает топы
 app.get('/api/top', async (req, res) => {
     try {
-        const { type = 'all' } = req.query;
+        const { type = 'all', chat_id } = req.query;
         const allUsers = await User.find({});
         
         let usersList = [];
         
         allUsers.forEach(u => {
             let count = 0;
-            if (u.chats) {
-                Object.values(u.chats).forEach(chatData => {
-                    count += chatData[type] || chatData['all'] || 0;
-                });
-            }
             
-            if (count > 0) {
-                usersList.push({
-                    username: u.username || 'Резидент',
-                    message_count: count
-                });
-            }
-        });
-
-        // Сортируем от самых активных к менее активным
-        usersList.sort((a, b) => b.message_count - a.message_count);
-        
-        // Возвращаем топ-10
-        res.json(usersList.slice(0, 10));
-    } catch (e) {
-        console.error("Ошибка при получении топов из базы:", e);
-        res.status(500).json({ error: "DB error" });
-    }
-});
-
-app.listen(3000, () => {
-    console.log('API для топов запущен и слушает базу данных!');
-});
-
             // Если запрашивают топ конкретного чата
             if (chat_id && chat_id !== 'global' && u.chats && u.chats[chat_id]) {
                 count = u.chats[chat_id][type] || u.chats[chat_id]['all'] || 0;
@@ -85,6 +57,28 @@ app.listen(PORT, () => {
 const bot = new Telegraf("8708472061:AAGsyYm8RhgDlqpyeEiGwYlbnXFZwKdTI2M");
 const MINI_APP_URL = "https://luniska366-bot.github.io/together-universe-bot/";
 
+// Функция трекинга сообщений в БД (чтобы бот не падал при сообщениях)
+async function trackMessage(userId, username, chatId) {
+    let user = await User.findOne({ userId });
+    if (!user) {
+        user = new User({ userId, username, chats: {}, points: 0, warnings: {} });
+    }
+    
+    chatId = chatId.toString();
+    if (!user.chats) user.chats = {};
+    if (!user.chats[chatId]) {
+        user.chats[chatId] = { all: 0, day: 0, week: 0, month: 0 };
+    }
+    
+    user.chats[chatId].all += 1;
+    user.chats[chatId].day = (user.chats[chatId].day || 0) + 1;
+    user.chats[chatId].week = (user.chats[chatId].week || 0) + 1;
+    user.chats[chatId].month = (user.chats[chatId].month || 0) + 1;
+    user.username = username || user.username;
+    
+    user.markModified('chats');
+    await user.save();
+}
 
 // Команда /start
 bot.start(async (ctx) => {
@@ -95,7 +89,7 @@ bot.start(async (ctx) => {
     if (!isGroup) {
         let user = await User.findOne({ userId });
         if (!user) {
-            await new User({ userId, username, chats: {} }).save();
+            await new User({ userId, username, chats: {}, warnings: {} }).save();
         }
         return ctx.reply(
             `Привет, ${ctx.from.first_name}! 🌌\n\nТвой паспорт Юниверса готов.`,
@@ -124,7 +118,7 @@ bot.hears(/^кто я$/i, async (ctx) => {
     ctx.reply(
         `🪪 **Паспорт Юниверса**\n\n` +
         `👤 Резидент: @${user.username}\n` +
-        `🌟 Очки: ${user.points}\n` +
+        `🌟 Очки: ${user.points || 0}\n` +
         `💬 Сообщений (всего): ${stats.all}`,
         { parse_mode: "Markdown" }
     );
@@ -142,7 +136,7 @@ bot.command(['topall', 'topday', 'topweek', 'topmonth'], async (ctx) => {
         let cleanCommand = fullCommand.split('@')[0];
         let period = cleanCommand.replace('top', '');
         
-        const chatId = ctx.chat.id;
+        const chatId = ctx.chat.id.toString();
         const allUsers = await User.find({});
         
         let usersList = [];
@@ -158,7 +152,7 @@ bot.command(['topall', 'topday', 'topweek', 'topmonth'], async (ctx) => {
         usersList.sort((a, b) => b.count - a.count);
         let topText = `📊 **Топ (${period})**:\n\n`;
         usersList.slice(0, 10).forEach((item, i) => {
-            topText += `${i + 1}. @${item.username} — ${item.count} сообщ.\n`;
+            topText += `${i + 1}. @${item.username || 'Резидент'} — ${item.count} сообщ.\n`;
         });
 
         ctx.reply(topText || "Пока пусто!", { parse_mode: "Markdown" });
@@ -345,7 +339,6 @@ async function handleCheckCommand(ctx) {
         const args = ctx.message.text.split(' ');
         const period = args[1] && ['day', 'week', 'month', 'all'].includes(args[1]) ? args[1] : 'week';
         
-        // Установлены новые нормы: День - 10, Неделя - 70, Месяц - 150
         const defaultNorms = { day: 10, week: 70, month: 150, all: 200 };
         const minMessages = parseInt(args[2]) || defaultNorms[period];
         
@@ -435,7 +428,7 @@ bot.action(/^kick_lazy_(day|week|month|all)_(\d+)$/, async (ctx) => {
     }
 });
 
-// Короткие команды с поддержкой имени бота в группах (с нормами 10 / 70 / 150)
+// Короткие команды с поддержкой имени бота в группах
 bot.hears(/^\/checkday(@\w+)?$/, async (ctx) => {
     ctx.message.text = '/check day 10';
     return handleCheckCommand(ctx);
