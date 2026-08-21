@@ -84,7 +84,7 @@
             outline: none;
         }
         
-        /* Стеклянный островок снизу на 5 кнопок */
+        /* Стеклянный островок снизу */
         .glass-dock {
             position: fixed !important;
             bottom: 15px !important;
@@ -159,7 +159,7 @@
             <div>
                 <div id="userName" style="font-weight: bold; font-size: 16px;">Макар</div>
                 <div style="font-size: 13px; opacity: 0.8; margin-top: 2px;">
-                    🌟 <span id="userBalance">0</span> <span data-i18n="points">очков</span> | 📈 Лев. <span id="userLevel">1</span>
+                    🌟 <span id="userBalance">0</span> очков | ⭐ <span id="userSeasonCurrency">0</span> | 📈 Лев. <span id="userLevel">1</span>
                 </div>
             </div>
         </div>
@@ -168,29 +168,31 @@
     <!-- Главная -->
     <div id="feed" class="section active">
         <h3 style="margin-top: 0;" data-i18n="feedTitle">📰 Новостная лента</h3>
-        <div class="card">
-            <h4 style="margin: 0 0 5px 0;">🚀 Together Universe Hub</h4>
-            <p style="margin: 0; font-size: 14px; opacity: 0.9;" data-i18n="feedDesc">Интерфейс полностью обновлен в стиле суперзвезды.</p>
+        <div id="newsContainer">
+            <div class="card">Загрузка новостей... 🚀</div>
         </div>
     </div>
 
     <!-- Магазин -->
     <div id="shop" class="section">
         <h3 style="margin-top: 0;" data-i18n="shopTitle">🛍 Магазин кастомизации</h3>
-        <div class="card"><p data-i18n="shopSoon">Товары и уникальные роли скоро появятся!</p></div>
+        <div id="shopContainer">
+            <div class="card">Загрузка товаров... ✨</div>
+        </div>
     </div>
 
     <!-- Ивенты -->
     <div id="events" class="section">
         <h3 style="margin-top: 0;" data-i18n="eventsTitle">⚡ Активные ивенты</h3>
-        <div class="card"><p data-i18n="eventsSoon">События и челленджи в разработке.</p></div>
+        <div id="eventsContainer">
+            <div class="card">Загрузка ивентов... ⚡</div>
+        </div>
     </div>
 
     <!-- Топы -->
     <div id="tops" class="section">
         <h3 style="margin-top: 0;" data-i18n="topsTitle">🏆 Топы активов</h3>
         
-        <!-- Кнопки выбора периода -->
         <div style="display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px;">
             <button onclick="loadLeaderboard('day')" style="font-size: 11px; padding: 4px 8px;">☀️ День</button>
             <button onclick="loadLeaderboard('week')" style="font-size: 11px; padding: 4px 8px;">⚡ Неделя</button>
@@ -208,10 +210,13 @@
         <h3 style="margin-top: 0;" data-i18n="profileTitle">👤 Профиль и Настройки</h3>
         <div class="card">
             <p style="margin: 0 0 10px 0;"><b data-i18n="passportActive">Паспорт Юниверса активен.</b> ✨</p>
+            <p style="margin: 0 0 10px 0; font-size: 14px;">📦 Предметов в инвентаре: <span id="userInventoryCount">0</span></p>
             <div style="display: flex; gap: 10px; margin-top: 12px; align-items: center; flex-wrap: wrap;">
                 <button onclick="toggleTheme()">🌙/☀️ <span data-i18n="themeBtn">Тема</span></button>
                 
                 <select id="langSelect" onchange="changeLanguage(this.value)">
+                    <option value="ru" selected>🇷🇺 Русский</option>
+                    <option value="en">🇬🇧 English</option>
                     <option value="az">🇦🇿 Azərbaycan</option>
                     <option value="hy">🇦🇲 Հայերեն</option>
                     <option value="be">🇧🇾 Беларуская</option>
@@ -223,10 +228,9 @@
                     <option value="ko">🇰🇷 한국어</option>
                     <option value="lv">🇱🇻 Latviešu</option>
                     <option value="lt">🇱🇹 Lietuvių</option>
-                    <option value="ro">🇲🇩 / 🇷🇴 Română / Moldovenească</option>
+                    <option value="ro">🇲🇩 / 🇷🇴 Română</option>
                     <option value="pl">🇵🇱 Polski</option>
                     <option value="pt">🇵🇹 Português</option>
-                    <option value="ru" selected>🇷🇺 Русский</option>
                     <option value="sr">🇷🇸 Српски</option>
                     <option value="tg">🇹🇯 Тоҷикӣ</option>
                     <option value="uz">🇺🇿 Oʻzbekcha</option>
@@ -235,18 +239,17 @@
                     <option value="de">🇩🇪 Deutsch</option>
                     <option value="it">🇮🇹 Italiano</option>
                     <option value="es">🇪🇸 Español</option>
-                    <option value="en">🇬🇧 English</option>
                     <option value="ja">🇯🇵 日本語</option>
                 </select>
             </div>
         </div>
     </div>
 
-    <!-- Нижний плавающий островок на 5 вкладок -->
+    <!-- Нижний плавающий островок -->
     <div class="glass-dock">
-        <button class="active" onclick="switchTab('feed', this)" data-i18n="tabFeed">📰 Главная</button>
-        <button onclick="switchTab('shop', this)" data-i18n="tabShop">🛍 Магазин</button>
-        <button onclick="switchTab('events', this)" data-i18n="tabEvents">⚡ Ивенты</button>
+        <button class="active" onclick="switchTab('feed', this); loadNews();" data-i18n="tabFeed">📰 Главная</button>
+        <button onclick="switchTab('shop', this); loadShop();" data-i18n="tabShop">🛍 Магазин</button>
+        <button onclick="switchTab('events', this); loadEvents();" data-i18n="tabEvents">⚡ Ивенты</button>
         <button onclick="switchTab('tops', this); loadLeaderboard('all');" data-i18n="tabTops">🏆 Топы</button>
         <button onclick="switchTab('profile', this)" data-i18n="tabProfile">👤 Профиль</button>
     </div>
@@ -256,8 +259,9 @@
         tg.expand();
         
         const API_URL = "https://together-universe-bot.onrender.com";
+        let currentUserId = tg.initDataUnsafe?.user?.id || "123456789"; // Заглушка для теста вне телеграма
 
-        // Корректная подгрузка данных пользователя из Телеграма и базы
+        // Загрузка данных профиля и инициализация
         async function initUser() {
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 let user = tg.initDataUnsafe.user;
@@ -270,17 +274,20 @@
                 } else {
                     document.getElementById('avatarLetter').innerText = user.first_name[0].toUpperCase();
                 }
-
-                // Загружаем очки и уровень из MongoDB
-                try {
-                    let resp = await fetch(`${API_URL}/api/user-data?userId=${user.id}`);
-                    let data = await resp.json();
-                    document.getElementById('userBalance').innerText = data.points || 0;
-                    document.getElementById('userLevel').innerText = data.level || 1;
-                } catch(e) {
-                    console.error("Не удалось подгрузить данные профиля", e);
-                }
             }
+
+            try {
+                let resp = await fetch(`${API_URL}/api/user-data?userId=${currentUserId}`);
+                let data = await resp.json();
+                document.getElementById('userBalance').innerText = data.points || 0;
+                document.getElementById('userSeasonCurrency').innerText = data.season_currency || 0;
+                document.getElementById('userLevel').innerText = data.level || 1;
+                document.getElementById('userInventoryCount').innerText = data.inventory ? data.inventory.length : 0;
+            } catch(e) {
+                console.error("Не удалось подгрузить данные профиля", e);
+            }
+            
+            loadNews();
         }
 
         initUser();
@@ -298,7 +305,89 @@
             body.setAttribute('data-theme', newTheme);
         }
 
-        // Функция подгрузки топов
+        // Загрузка новостей
+        async function loadNews() {
+            try {
+                let resp = await fetch(`${API_URL}/api/news`);
+                let news = await resp.json();
+                let container = document.getElementById('newsContainer');
+                container.innerHTML = '';
+                
+                if (!news || news.length === 0) {
+                    container.innerHTML = '<div class="card">Пока нет свежих новостей. 📭</div>';
+                    return;
+                }
+
+                news.forEach(item => {
+                    container.innerHTML += `
+                        <div class="card">
+                            <h4 style="margin: 0 0 5px 0;">${item.title}</h4>
+                            <p style="margin: 0; font-size: 14px; opacity: 0.9;">${item.text}</p>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                document.getElementById('newsContainer').innerHTML = '<div class="card">Ошибка загрузки новостей ❌</div>';
+            }
+        }
+
+        // Загрузка магазина
+        async function loadShop() {
+            try {
+                let resp = await fetch(`${API_URL}/api/shop`);
+                let items = await resp.json();
+                let container = document.getElementById('shopContainer');
+                container.innerHTML = '';
+
+                if (!items || items.length === 0) {
+                    container.innerHTML = '<div class="card">Магазин пуст. 🛍</div>';
+                    return;
+                }
+
+                items.forEach(item => {
+                    container.innerHTML += `
+                        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h4 style="margin: 0 0 4px 0;">${item.name}</h4>
+                                <span style="font-size: 13px; opacity: 0.8;">Цена: ${item.cost} ${item.type}</span>
+                            </div>
+                            <button onclick="alert('Покупка в разработке!')">Купить</button>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                document.getElementById('shopContainer').innerHTML = '<div class="card">Ошибка загрузки магазина ❌</div>';
+            }
+        }
+
+        // Загрузка ивентов
+        async function loadEvents() {
+            try {
+                let resp = await fetch(`${API_URL}/api/events`);
+                let events = await resp.json();
+                let container = document.getElementById('eventsContainer');
+                container.innerHTML = '';
+
+                if (!events || events.length === 0) {
+                    container.innerHTML = '<div class="card">Нет активных ивентов. ⚡</div>';
+                    return;
+                }
+
+                events.forEach(ev => {
+                    container.innerHTML += `
+                        <div class="card">
+                            <h4 style="margin: 0 0 5px 0;">${ev.title}</h4>
+                            <p style="margin: 0 0 8px 0; font-size: 14px; opacity: 0.9;">${ev.description}</p>
+                            <span style="font-size: 12px; opacity: 0.7;">Награда: ${ev.rewardValue}</span>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                document.getElementById('eventsContainer').innerHTML = '<div class="card">Ошибка загрузки ивентов ❌</div>';
+            }
+        }
+
+        // Загрузка топов
         async function loadLeaderboard(type = 'all') {
             try {
                 let container = document.getElementById('topsContainer');
@@ -325,38 +414,37 @@
                     `;
                 });
             } catch (e) {
-                console.error("Не удалось загрузить топы:", e);
                 document.getElementById('topsContainer').innerHTML = '<div class="card">Ошибка подключения к чартам ❌</div>';
             }
         }
 
         // Словари языков
         const i18n = {
-            ru: { points: "очков", feedTitle: "📰 Новостная лента", feedDesc: "Интерфейс полностью обновлен в стиле суперзвезды.", shopTitle: "🛍 Магазин кастомизации", shopSoon: "Товары и уникальные роли скоро появятся!", eventsTitle: "⚡ Активные ивенты", eventsSoon: "События и челленджи в разработке.", topsTitle: "🏆 Топы активов", profileTitle: "👤 Профиль и Настройки", passportActive: "Паспорт Юниверса активен.", themeBtn: "Тема", tabFeed: "📰 Главная", tabShop: "🛍 Магазин", tabEvents: "⚡ Ивенты", tabTops: "🏆 Топы", tabProfile: "👤 Профиль" },
-            en: { points: "points", feedTitle: "📰 News Feed", feedDesc: "The interface has been completely redesigned.", shopTitle: "🛍 Customization Shop", shopSoon: "Items and custom roles coming soon!", eventsTitle: "⚡ Active Events", eventsSoon: "Events and challenges are in development.", topsTitle: "🏆 Leaderboards", profileTitle: "👤 Profile & Settings", passportActive: "Universe Passport is active.", themeBtn: "Theme", tabFeed: "📰 Feed", tabShop: "🛍 Shop", tabEvents: "⚡ Events", tabTops: "🏆 Tops", tabProfile: "👤 Profile" },
-            az: { points: "xal", feedTitle: "📰 Xəbər lenti", feedDesc: "İnterfeys tamamilə yeniləndi.", shopTitle: "🛍 Fərdiləşdirmə mağazası", shopSoon: "Məhsullar tezliklə!", eventsTitle: "⚡ Aktiv tədbirlər", eventsSoon: "Hadisələr hazırlıq mərhələsindədir.", topsTitle: "🏆 Liderlər lövhəsi", profileTitle: "👤 Profil və Ayarlar", passportActive: "Universe pasportu aktivdir.", themeBtn: "Mövzu", tabFeed: "📰 Əsas", tabShop: "🛍 Mağaza", tabEvents: "⚡ Tədbirlər", tabTops: "🏆 Top", tabProfile: "👤 Profil" },
-            hy: { points: "միավոր", feedTitle: "📰 Նորությունների ժապավեն", feedDesc: "Ինտերֆեյսը լիովին թարմացվել է:", shopTitle: "🛍 Անհատականացման խանութ", shopSoon: "Ապրանքները շուտով:", eventsTitle: "⚡ Ակտիվ իրադարձություններ", eventsSoon: "Իրադարձությունները մշակման փուլում են:", topsTitle: "🏆 Առաջատարներ", profileTitle: "👤 Պրոֆիլ և Կարգավորումներ", passportActive: "Universe անձնագիրը ակտիվ է:", themeBtn: "Թեմա", tabFeed: "📰 Գլխավոր", tabShop: "🛍 Խանութ", tabEvents: "⚡ Իրադարձություններ", tabTops: "🏆 Թոփեր", tabProfile: "👤 Պրոֆիլ" },
-            be: { points: "ачкоў", feedTitle: "📰 Навінавая стужка", feedDesc: "Інтэрфейс цалкам абноўлены.", shopTitle: "🛍 Магазін кастамізацыі", shopSoon: "Тавары хутка!", eventsTitle: "⚡ Актыўныя івенты", eventsSoon: "Падзеі ў распрацоўцы.", topsTitle: "🏆 Топы актыву", profileTitle: "👤 Профіль і Настройкі", passportActive: "Пш пашпарт актыўны.", themeBtn: "Тэма", tabFeed: "📰 Галоўная", tabShop: "🛍 Магазін", tabEvents: "⚡ Івенты", tabTops: "🏆 Топы", tabProfile: "👤 Профіль" },
-            bg: { points: "точки", feedTitle: "📰 Новинарски поток", feedDesc: "Интерфейсът е напълно обновен.", shopTitle: "🛍 Магазин", shopSoon: "Предмети скоро!", eventsTitle: "⚡ Активни събития", eventsSoon: "В процес на разработка.", topsTitle: "🏆 Класация", profileTitle: "👤 Профил и Настройки", passportActive: "Universe паспортът е активен.", themeBtn: "Тема", tabFeed: "📰 Начало", tabShop: "🛍 Магазин", tabEvents: "⚡ Събития", tabTops: "🏆 Топ", tabProfile: "👤 Профил" },
-            ka: { points: "ქულა", feedTitle: "📰 სიახლეების лента", feedDesc: "ინტერფეისი სრულად განახლდა.", shopTitle: "🛍 მაღაზია", shopSoon: "ნივთები მალე!", eventsTitle: "⚡ აქტიური ღონისძიებები", eventsSoon: "მოვლენები დამუშავების პროცესშია.", topsTitle: "🏆 ლიდერები", profileTitle: "👤 პროფილი და პარამეტრები", passportActive: "Universe პასპორტი აქტიურია.", themeBtn: "თემა", tabFeed: "📰 მთავარი", tabShop: "🛍 მაღაზია", tabEvents: "⚡ ივენთები", tabTops: "🏆 ტოპები", tabProfile: "👤 პროფილი" },
-            kk: { points: "ұпай", feedTitle: "📰 Жаңалықтар лентасы", feedDesc: "Интерфейс толығымен жаңартылды.", shopTitle: "🛍 Дүкен", shopSoon: "Тауарлар жақында!", eventsTitle: "⚡ Белсенді іс-шаралар", eventsSoon: "Әзірленуде.", topsTitle: "🏆 Үздіктер", profileTitle: "👤 Профиль және Параметрлер", passportActive: "Universe паспорты белсенді.", themeBtn: "Тақырып", tabFeed: "📰 Басты", tabShop: "🛍 Дүкен", tabEvents: "⚡ Іс-шара", tabTops: "🏆 Топтар", tabProfile: "👤 Профиль" },
-            ky: { points: "упай", feedTitle: "📰 Жаңылыктар лентасы", feedDesc: "Интерфейс толугу менен жаңыртылды.", shopTitle: "🛍 Дүкөн", shopSoon: "Буюмдар жакында!", eventsTitle: "⚡ Активдүү иш-чаралар", eventsSoon: "Иштеп чыгууда.", topsTitle: "🏆 Топтор", profileTitle: "👤 Профиль жана Жөндөөлөр", passportActive: "Universe паспорту активдүү.", themeBtn: "Тема", tabFeed: "📰 Башкы", tabShop: "🛍 Дүкөн", tabEvents: "⚡ Иш-чара", tabTops: "🏆 Топ", tabProfile: "👤 Профиль" },
-            zh: { points: "积分", feedTitle: "📰 新闻动态", feedDesc: "界面已全面更新。", shopTitle: "🛍 自定义商店", shopSoon: "即将推出！", eventsTitle: "⚡ 进行中的活动", eventsSoon: "活动正在开发中。", topsTitle: "🏆 排行榜", profileTitle: "👤 个人资料与设置", passportActive: "Universe 护照已激活。", themeBtn: "主题", tabFeed: "📰 首页", tabShop: "🛍 商店", tabEvents: "⚡ 活动", tabTops: "🏆 榜单", tabProfile: "👤 我的" },
-            ko: { points: "포인트", feedTitle: "📰 뉴스 피드", feedDesc: "인터페이스가 완전히 새롭게 단장되었습니다.", shopTitle: "🛍 상점", shopSoon: "곧 출시!", eventsTitle: "⚡ 진행 중인 이벤트", eventsSoon: "개발 중입니다.", topsTitle: "🏆 리더보드", profileTitle: "👤 프로필 및 설정", passportActive: "Universe 패스포트가 활성화되었습니다.", themeBtn: "테마", tabFeed: "📰 홈", tabShop: "🛍 상점", tabEvents: "⚡ 이벤트", tabTops: "🏆 랭킹", tabProfile: "👤 프로필" },
-            lv: { points: "punkti", feedTitle: "📰 Jaunumu plūsma", feedDesc: "Saskarne ir pilnībā atjaunināta.", shopTitle: "🛍 Veikals", shopSoon: "Drīzumā!", eventsTitle: "⚡ Aktīvie notikumi", eventsSoon: "Izstrādē.", topsTitle: "🏆 Topi", profileTitle: "👤 Profils un Iestatījumi", passportActive: "Universe pase ir aktīva.", themeBtn: "Tēma", tabFeed: "📰 Sākums", tabShop: "🛍 Veikals", tabEvents: "⚡ Notikumi", tabTops: "🏆 Topi", tabProfile: "👤 Profils" },
-            lt: { points: "taškai", feedTitle: "📰 Naujienų srautas", feedDesc: "Sąsaja visiškai atnaujinta.", shopTitle: "🛍 Parduotuvė", shopSoon: "Netrukus!", eventsTitle: "⚡ Aktyvūs renginiai", eventsSoon: "Kuriami.", topsTitle: "🏆 Lyderiai", profileTitle: "👤 Profilis ir Nustatymai", passportActive: "Universe pasas aktyvus.", themeBtn: "Tema", tabFeed: "📰 Pagrindinis", tabShop: "🛍 Parduotuvė", tabEvents: "⚡ Renginiai", tabTops: "🏆 Topai", tabProfile: "👤 Profilis" },
-            ro: { points: "puncte", feedTitle: "📰 Flux de știri", feedDesc: "Interfața a fost complet reînnoită.", shopTitle: "🛍 Magazin", shopSoon: "În curând!", eventsTitle: "⚡ Evenimente active", eventsSoon: "În dezvoltare.", topsTitle: "🏆 Clasament", profileTitle: "👤 Profil și Setări", passportActive: "Pașaportul Universe este activ.", themeBtn: "Temă", tabFeed: "📰 Acasă", tabShop: "🛍 Magazin", tabEvents: "⚡ Evenimente", tabTops: "🏆 Top", tabProfile: "👤 Profil" },
-            pl: { points: "punktów", feedTitle: "📰 Aktualności", feedDesc: "Interfejs został całkowicie odświeżony.", shopTitle: "🛍 Sklep", shopSoon: "Wkrótce!", eventsTitle: "⚡ Aktywne wydarzenia", eventsSoon: "W przygotowaniu.", topsTitle: "🏆 Ranking", profileTitle: "👤 Profil i Ustawienia", passportActive: "Paszport Universe jest aktywny.", themeBtn: "Motyw", tabFeed: "📰 Główna", tabShop: "🛍 Sklep", tabEvents: "⚡ Eventy", tabTops: "🏆 Ranking", tabProfile: "👤 Profil" },
-            pt: { points: "pontos", feedTitle: "📰 Feed de notícias", feedDesc: "A interface foi completamente renovada.", shopTitle: "🛍 Loja", shopSoon: "Em breve!", eventsTitle: "⚡ Eventos ativos", eventsSoon: "Em desenvolvimento.", topsTitle: "🏆 Placar", profileTitle: "👤 Perfil e Configurações", passportActive: "O Passaporte Universe está ativo.", themeBtn: "Tema", tabFeed: "📰 Início", tabShop: "🛍 Loja", tabEvents: "⚡ Eventos", tabTops: "🏆 Tops", tabProfile: "👤 Perfil" },
-            sr: { points: "поена", feedTitle: "📰 Вести", feedDesc: "Интерфејс је потпуно ажуриран.", shopTitle: "🛍 Продавница", shopSoon: "Ускоро!", eventsTitle: "⚡ Активни догађаји", eventsSoon: "У развоју.", topsTitle: "🏆 Листа лидера", profileTitle: "👤 Профил и Подешавања", passportActive: "Universe пасош је активан.", themeBtn: "Тема", tabFeed: "📰 Почетак", tabShop: "🛍 Продавница", tabEvents: "⚡ Догађаји", tabTops: "🏆 Топ", tabProfile: "👤 Профил" },
-            tg: { points: "хол", feedTitle: "📰 Лентаи хабарҳо", feedDesc: "Интерфейс пурра нав карда шуд.", shopTitle: "🛍 Дӯкон", shopSoon: "Ба зудӣ!", eventsTitle: "⚡ Чорабиниҳои фаъол", eventsSoon: "Дар ҳоли таҳияанд.", topsTitle: "🏆 Пешсафон", profileTitle: "👤 Профил ва Танзимот", passportActive: "Шиносномаи Universe фаъол аст.", themeBtn: "Мавзӯъ", tabFeed: "📰 Асосӣ", tabShop: "🛍 Дӯкон", tabEvents: "⚡ Чорабиниҳо", tabTops: "🏆 Топҳо", tabProfile: "👤 Профил" },
-            uz: { points: "ball", feedTitle: "📰 Yangiliklar lentasi", feedDesc: "Interfeys to'liq yangilandi.", shopTitle: "🛍 Do'kon", shopSoon: "Tez kunda!", eventsTitle: "⚡ Faol tadbirlar", eventsSoon: "Ishlab chiqilmoqda.", topsTitle: "🏆 Reyting", profileTitle: "👤 Profil va Sozlamalar", passportActive: "Universe pasporti faol.", themeBtn: "Mavzu", tabFeed: "📰 Asosiy", tabShop: "🛍 Do'kon", tabEvents: "⚡ Tadbirlar", tabTops: "🏆 Top", tabProfile: "👤 Profil" },
-            uk: { points: "очок", feedTitle: "📰 Новинна стрічка", feedDesc: "Інтерфейс повністю оновлено.", shopTitle: "🛍 Магазин", shopSoon: "Скоро!", eventsTitle: "⚡ Активні івенти", eventsSoon: "В розробці.", topsTitle: "🏆 Топи", profileTitle: "👤 Профіль та Налаштування", passportActive: "Паспорт Universe активний.", themeBtn: "Тема", tabFeed: "📰 Головна", tabShop: "🛍 Магазин", tabEvents: "⚡ Івенти", tabTops: "🏆 Топи", tabProfile: "👤 Профіль" },
-            fr: { points: "points", feedTitle: "📰 Fil d'actualité", feedDesc: "L'interface a été entièrement mise à jour.", shopTitle: "🛍 Boutique", shopSoon: "Bientôt !", eventsTitle: "⚡ Événements actifs", eventsSoon: "En développement.", topsTitle: "🏆 Classement", profileTitle: "👤 Profil et Paramètres", passportActive: "Le passeport Universe est actif.", themeBtn: "Thème", tabFeed: "📰 Accueil", tabShop: "🛍 Boutique", tabEvents: "⚡ Événements", tabTops: "🏆 Tops", tabProfile: "👤 Profil" },
-            de: { points: "Punkte", feedTitle: "📰 Newsfeed", feedDesc: "Die Benutzeroberfläche wurde komplett aktualisiert.", shopTitle: "🛍 Shop", shopSoon: "Bald!", eventsTitle: "⚡ Aktive Events", eventsSoon: "In Entwicklung.", topsTitle: "🏆 Bestenliste", profileTitle: "👤 Profil & Einstellungen", passportActive: "Universe-Pass ist aktiv.", themeBtn: "Thema", tabFeed: "📰 Feed", tabShop: "🛍 Shop", tabEvents: "⚡ Events", tabTops: "🏆 Tops", tabProfile: "👤 Profil" },
-            it: { points: "punti", feedTitle: "📰 Feed notizie", feedDesc: "L'interfaccia è stata completamente aggiornata.", shopTitle: "🛍 Negozio", shopSoon: "In arrivo!", eventsTitle: "⚡ Eventi attivi", eventsSoon: "In fase di sviluppo.", topsTitle: "🏆 Classifica", profileTitle: "👤 Profilo e Impostazioni", passportActive: "Il passaporto Universe è attivo.", themeBtn: "Tema", tabFeed: "📰 Home", tabShop: "🛍 Negozio", tabEvents: "⚡ Eventi", tabTops: "🏆 Top", tabProfile: "👤 Profilo" },
-            es: { points: "puntos", feedTitle: "📰 Noticias", feedDesc: "La interfaz ha sido completamente actualizada.", shopTitle: "🛍 Tienda", shopSoon: "¡Próximamente!", eventsTitle: "⚡ Eventos activos", eventsSoon: "En desarrollo.", topsTitle: "🏆 Clasificación", profileTitle: "👤 Perfil y Configuración", passportActive: "El pasaporte Universe es activo.", themeBtn: "Tema", tabFeed: "📰 Inicio", tabShop: "🛍 Tienda", tabEvents: "⚡ Eventos", tabTops: "🏆 Tops", tabProfile: "👤 Perfil" },
-            ja: { points: "ポイント", feedTitle: "📰 ニュースフィード", feedDesc: "インターフェースが完全に更新されました。", shopTitle: "🛍 ショップ", shopSoon: "まもなく！", eventsTitle: "⚡ アクティブイベント", eventsSoon: "開発中。", topsTitle: "🏆 リーダーボード", profileTitle: "👤 プロフィールと設定", passportActive: "Universeパスポートが有効です。", themeBtn: "テーマ", tabFeed: "📰 ホーム", tabShop: "🛍 ショップ", tabEvents: "⚡ イベント", tabTops: "🏆 トップ", tabProfile: "👤 プロフィール" }
+            ru: { points: "очков", feedTitle: "📰 Новостная лента", shopTitle: "🛍 Магазин кастомизации", eventsTitle: "⚡ Активные ивенты", topsTitle: "🏆 Топы активов", profileTitle: "👤 Профиль и Настройки", passportActive: "Паспорт Юниверса активен.", themeBtn: "Тема", tabFeed: "📰 Главная", tabShop: "🛍 Магазин", tabEvents: "⚡ Ивенты", tabTops: "🏆 Топы", tabProfile: "👤 Профиль" },
+            en: { points: "points", feedTitle: "📰 News Feed", shopTitle: "🛍 Customization Shop", eventsTitle: "⚡ Active Events", topsTitle: "🏆 Leaderboards", profileTitle: "👤 Profile & Settings", passportActive: "Universe Passport is active.", themeBtn: "Theme", tabFeed: "📰 Feed", tabShop: "🛍 Shop", tabEvents: "⚡ Events", tabTops: "🏆 Tops", tabProfile: "👤 Profile" },
+            az: { points: "xal", feedTitle: "📰 Xəbər lenti", shopTitle: "🛍 Fərdiləşdirmə mağazası", eventsTitle: "⚡ Aktiv tədbirlər", topsTitle: "🏆 Liderlər lövhəsi", profileTitle: "👤 Profil və Ayarlar", passportActive: "Universe pasportu aktivdir.", themeBtn: "Mövzu", tabFeed: "📰 Əsas", tabShop: "🛍 Mağaza", tabEvents: "⚡ Tədbirlər", tabTops: "🏆 Top", tabProfile: "👤 Profil" },
+            hy: { points: "միավոր", feedTitle: "📰 Նորությունների ժապավեն", shopTitle: "🛍 Անհատականացման խանութ", eventsTitle: "⚡ Ակտիվ իրադարձություններ", topsTitle: "🏆 Առաջատարներ", profileTitle: "👤 Պրոֆիլ և Կարգավորումներ", passportActive: "Universe անձնագիրը ակտիվ է:", themeBtn: "Թեմա", tabFeed: "📰 Գլխավոր", tabShop: "🛍 Խանութ", tabEvents: "⚡ Իրադարձություններ", tabTops: "🏆 Թոփեր", tabProfile: "👤 Պրոֆիլ" },
+            be: { points: "ачкоў", feedTitle: "📰 Навінавая стужка", shopTitle: "🛍 Магазін кастамізацыі", eventsTitle: "⚡ Актыўныя івенты", topsTitle: "🏆 Топы актыву", profileTitle: "👤 Профіль і Настройкі", passportActive: "Пш пашпарт актыўны.", themeBtn: "Тэма", tabFeed: "📰 Галоўная", tabShop: "🛍 Магазін", tabEvents: "⚡ Івенты", tabTops: "🏆 Топы", tabProfile: "👤 Профіль" },
+            bg: { points: "точки", feedTitle: "📰 Новинарски поток", shopTitle: "🛍 Магазин", eventsTitle: "⚡ Активни събития", topsTitle: "🏆 Класация", profileTitle: "👤 Профил и Настройки", passportActive: "Universe паспортът е активен.", themeBtn: "Тема", tabFeed: "📰 Начало", tabShop: "🛍 Магазин", tabEvents: "⚡ Събития", tabTops: "🏆 Топ", tabProfile: "👤 Профил" },
+            ka: { points: "ქულა", feedTitle: "📰 სიახლეების лента", shopTitle: "🛍 მაღაზია", eventsTitle: "⚡ აქტიური ღონისძიებები", topsTitle: "🏆 ლიდერები", profileTitle: "👤 პროფილი და პარამეტრები", passportActive: "Universe პასპორტი აქტიურია.", themeBtn: "თემა", tabFeed: "📰 მთავარი", tabShop: "🛍 მაღაზია", tabEvents: "⚡ ივენთები", tabTops: "🏆 ტოპები", tabProfile: "👤 პროფილი" },
+            kk: { points: "ұпай", feedTitle: "📰 Жаңалықтар лентасы", shopTitle: "🛍 Дүкен", eventsTitle: "⚡ Белсенді іс-шаралар", topsTitle: "🏆 Үздіктер", profileTitle: "👤 Профиль және Параметрлер", passportActive: "Universe паспорты белсенді.", themeBtn: "Тақырып", tabFeed: "📰 Басты", tabShop: "🛍 Дүкен", tabEvents: "⚡ Іс-шара", tabTops: "🏆 Топтар", tabProfile: "👤 Профиль" },
+            ky: { points: "упай", feedTitle: "📰 Жаңылыктар лентасы", shopTitle: "🛍 Дүкөн", eventsTitle: "⚡ Активдүү иш-чаралар", topsTitle: "🏆 Топтор", profileTitle: "👤 Профиль жана Жөндөөлөр", passportActive: "Universe паспорту активдүү.", themeBtn: "Тема", tabFeed: "📰 Башкы", tabShop: "🛍 Дүкөн", tabEvents: "⚡ Иш-чара", tabTops: "🏆 Топ", tabProfile: "👤 Профиль" },
+            zh: { points: "积分", feedTitle: "📰 新闻动态", shopTitle: "🛍 自定义商店", eventsTitle: "⚡ 进行中的活动", topsTitle: "🏆 排行榜", profileTitle: "👤 个人资料与设置", passportActive: "Universe 护照已激活。", themeBtn: "主题", tabFeed: "📰 首页", tabShop: "🛍 商店", tabEvents: "⚡ 活动", tabTops: "🏆 榜单", tabProfile: "👤 我的" },
+            ko: { points: "포인트", feedTitle: "📰 뉴스 피드", shopTitle: "🛍 상점", eventsTitle: "⚡ 진행 중인 이벤트", topsTitle: "🏆 리더보드", profileTitle: "👤 프로필 및 설정", passportActive: "Universe 패스포트가 활성화되었습니다.", themeBtn: "테마", tabFeed: "📰 홈", tabShop: "🛍 상점", tabEvents: "⚡ 이벤트", tabTops: "🏆 랭킹", tabProfile: "👤 프로필" },
+            lv: { points: "punkti", feedTitle: "📰 Jaunumu plūsma", shopTitle: "🛍 Veikals", eventsTitle: "⚡ Aktīvie notikumi", topsTitle: "🏆 Topi", profileTitle: "👤 Profils un Iestatījumi", passportActive: "Universe pase ir aktīva.", themeBtn: "Tēma", tabFeed: "📰 Sākums", tabShop: "🛍 Veikals", tabEvents: "⚡ Notikumi", tabTops: "🏆 Topi", tabProfile: "👤 Profils" },
+            lt: { points: "taškai", feedTitle: "📰 Naujienų srautas", shopTitle: "🛍 Parduotuvė", eventsTitle: "⚡ Aktyvūs renginiai", topsTitle: "🏆 Lyderiai", profileTitle: "👤 Profilis ir Nustatymai", passportActive: "Universe pasas aktyvus.", themeBtn: "Tema", tabFeed: "📰 Pagrindinis", tabShop: "🛍 Parduotuvė", tabEvents: "⚡ Renginiai", tabTops: "🏆 Topai", tabProfile: "👤 Profilis" },
+            ro: { points: "puncte", feedTitle: "📰 Flux de știri", shopTitle: "🛍 Magazin", eventsTitle: "⚡ Evenimente active", topsTitle: "🏆 Clasament", profileTitle: "👤 Profil și Setări", passportActive: "Pașaportul Universe este activ.", themeBtn: "Temă", tabFeed: "📰 Acasă", tabShop: "🛍 Magazin", tabEvents: "⚡ Evenimente", tabTops: "🏆 Top", tabProfile: "👤 Profil" },
+            pl: { points: "punktów", feedTitle: "📰 Aktualności", shopTitle: "🛍 Sklep", eventsTitle: "⚡ Aktywne wydarzenia", topsTitle: "🏆 Ranking", profileTitle: "👤 Profil i Ustawienia", passportActive: "Paszport Universe jest aktywny.", themeBtn: "Motyw", tabFeed: "📰 Główna", tabShop: "🛍 Sklep", tabEvents: "⚡ Eventy", tabTops: "🏆 Ranking", tabProfile: "👤 Profil" },
+            pt: { points: "pontos", feedTitle: "📰 Feed de notícias", shopTitle: "🛍 Loja", eventsTitle: "⚡ Eventos ativos", topsTitle: "🏆 Placar", profileTitle: "👤 Perfil e Configurações", passportActive: "O Passaporte Universe está ativo.", themeBtn: "Tema", tabFeed: "📰 Início", tabShop: "🛍 Loja", tabEvents: "⚡ Eventos", tabTops: "🏆 Tops", tabProfile: "👤 Perfil" },
+            sr: { points: "поена", feedTitle: "📰 Вести", shopTitle: "🛍 Продавница", eventsTitle: "⚡ Активни догађаји", topsTitle: "🏆 Листа лидера", profileTitle: "👤 Профил и Подешавања", passportActive: "Universe пасош је активан.", themeBtn: "Тема", tabFeed: "📰 Почетак", tabShop: "🛍 Продавница", tabEvents: "⚡ Догађаји", tabTops: "🏆 Топ", tabProfile: "👤 Профил" },
+            tg: { points: "хол", feedTitle: "📰 Лентаи хабарҳо", shopTitle: "🛍 Дӯкон", eventsTitle: "⚡ Чорабиниҳои фаъол", topsTitle: "🏆 Пешсафон", profileTitle: "👤 Профил ва Танзимот", passportActive: "Шиносномаи Universe фаъол аст.", themeBtn: "Мавзӯъ", tabFeed: "📰 Асосӣ", tabShop: "🛍 Дӯкон", tabEvents: "⚡ Чорабиниҳо", tabTops: "🏆 Топҳо", tabProfile: "👤 Профил" },
+            uz: { points: "ball", feedTitle: "📰 Yangiliklar lentasi", shopTitle: "🛍 Do'kon", eventsTitle: "⚡ Faol tadbirlar", topsTitle: "🏆 Reyting", profileTitle: "👤 Profil va Sozlamalar", passportActive: "Universe pasporti faol.", themeBtn: "Mavzu", tabFeed: "📰 Asosiy", tabShop: "🛍 Do'kon", tabEvents: "⚡ Tadbirlar", tabTops: "🏆 Top", tabProfile: "👤 Profil" },
+            uk: { points: "очок", feedTitle: "📰 Новинна стрічка", shopTitle: "🛍 Магазин", eventsTitle: "⚡ Активні івенти", topsTitle: "🏆 Топи", profileTitle: "👤 Профіль та Налаштування", passportActive: "Паспорт Universe активний.", themeBtn: "Тема", tabFeed: "📰 Головна", tabShop: "🛍 Магазин", tabEvents: "⚡ Івенти", tabTops: "🏆 Топи", tabProfile: "👤 Профіль" },
+            fr: { points: "points", feedTitle: "📰 Fil d'actualité", shopTitle: "🛍 Boutique", eventsTitle: "⚡ Événements actifs", topsTitle: "🏆 Classement", profileTitle: "👤 Profil et Paramètres", passportActive: "Le passeport Universe est actif.", themeBtn: "Thème", tabFeed: "📰 Accueil", tabShop: "🛍 Boutique", tabEvents: "⚡ Événements", tabTops: "🏆 Tops", tabProfile: "👤 Profil" },
+            de: { points: "Punkte", feedTitle: "📰 Newsfeed", shopTitle: "🛍 Shop", eventsTitle: "⚡ Aktive Events", topsTitle: "🏆 Bestenliste", profileTitle: "👤 Profil & Einstellungen", passportActive: "Universe-Pass ist aktiv.", themeBtn: "Thema", tabFeed: "📰 Feed", tabShop: "🛍 Shop", tabEvents: "⚡ Events", tabTops: "🏆 Tops", tabProfile: "👤 Profil" },
+            it: { points: "punti", feedTitle: "📰 Feed notizie", feedDesc: "L'interfaccia è stata completamente aggiornata.", shopTitle: "🛍 Negozio", eventsTitle: "⚡ Eventi attivi", topsTitle: "🏆 Classifica", profileTitle: "👤 Profilo e Impostazioni", passportActive: "Il passaporto Universe è attivo.", themeBtn: "Tema", tabFeed: "📰 Home", tabShop: "🛍 Negozio", tabEvents: "⚡ Eventi", tabTops: "🏆 Top", tabProfile: "👤 Profilo" },
+            es: { points: "puntos", feedTitle: "📰 Noticias", shopTitle: "🛍 Tienda", eventsTitle: "⚡ Eventos activos", topsTitle: "🏆 Clasificación", profileTitle: "👤 Perfil y Configuración", passportActive: "El pasaporte Universe è activo.", themeBtn: "Tema", tabFeed: "📰 Inicio", tabShop: "🛍 Tienda", tabEvents: "⚡ Eventos", tabTops: "🏆 Tops", tabProfile: "👤 Perfil" },
+            ja: { points: "ポイント", feedTitle: "📰 ニュースフィード", shopTitle: "🛍 ショップ", eventsTitle: "⚡ アクティブイベント", topsTitle: "🏆 リーダーボード", profileTitle: "👤 プロフィールと設定", passportActive: "Universeパスポートが有効です。", themeBtn: "テーマ", tabFeed: "📰 ホーム", tabShop: "🛍 ショップ", tabEvents: "⚡ イベント", tabTops: "🏆 トップ", tabProfile: "👤 プロフィール" }
         };
 
         function changeLanguage(lang) {
