@@ -555,11 +555,13 @@ app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
 });
 
 // И убедись, что при старте сервера ты говоришь Телеграму, куда слать сообщения:
-app.listen(PORT, async () => {
+const PORT = process.env.PORT || 10000; // Render даст свой порт, или используем 10000
+app.listen(PORT, '0.0.0.0', async () => {
     console.log(`Сервер запущен на порту ${PORT}!`);
     const webhookUrl = `https://together-universe-bot.onrender.com/bot${process.env.BOT_TOKEN}`;
     await bot.telegram.setWebhook(webhookUrl);
     console.log("Webhook установлен!");
 });
+
 
 console.log("Бот запущен с MongoDB и всеми обновлениями!");
