@@ -1,4 +1,4 @@
-const { Telegraf } = require('telegraf');
+const { Telegraf, Markup } = require('telegraf');
 const express = require('express');
 const cors = require('cors');
 const { User } = require('./db'); // Твоя готовая база данных
@@ -7,17 +7,35 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- ВСТАВЛЯЕМ СЮДА ---
+// --- НОВЫЕ ЭНДПОИНТЫ ДЛЯ MINI APP (МАГАЗИН, НОВОСТИ, ИВЕНТЫ, ПРОФИЛЬ) ---
+
+// Получение профиля и расширенных данных (валюты, достижения, уровень)
 app.get('/api/user-data', async (req, res) => {
     try {
         const user = await User.findOne({ userId: req.query.userId });
-        res.json(user || { points: 0, level: 1 });
+        res.json(user || { points: 0, level: 1, season_currency: 0, achievements: [] });
     } catch (e) {
         res.status(500).json({ error: "Ошибка при получении данных профиля" });
     }
 });
-// ----------------------
 
+// Эндпоинт для магазина (покупка товаров/валют)
+app.get('/api/shop', async (req, res) => {
+    res.json([
+        { id: 1, name: "🌟 Набор Звездного Резидента", cost: 100, type: "points" },
+        { id: 2, name: "💎 Сезонный Бонус", cost: 50, type: "season_currency" }
+    ]);
+});
+
+// Эндпоинт новостей и ивентов
+app.get('/api/news', async (req, res) => {
+    res.json([
+        { id: 1, title: "🚀 Запуск Together Universe", text: "Обновление бота и новые фичи в Mini App уже доступны!" },
+        { id: 2, title: "⭐ Ивент Активности", text: "Копите очки в чатах и получайте сезонную валюту вдвое быстрее!" }
+    ]);
+});
+
+// ------------------------------------------------------------------------
 
 // Эндпоинт, который забирает данные из MongoDB и отдает топы
 app.get('/api/top', async (req, res) => {
@@ -61,16 +79,37 @@ app.get('/api/top', async (req, res) => {
     }
 });
 
-
-
 const bot = new Telegraf("8708472061:AAGsyYm8RhgDlqpyeEiGwYlbnXFZwKdTI2M");
 const MINI_APP_URL = "https://luniska366-bot.github.io/together-universe-bot/";
 
-// Функция трекинга сообщений в БД (с начислением очков и уровней)
+// --- ТЕКСТОВЫЕ КОМАНДЫ И КАЛЛ (ЗАЗЫВАЛА) ---
+bot.hears(/^(!калл|калл|зазыв)/i, async (ctx) => {
+    await ctx.reply(`📢 Внимание всем! Кликаем по ссылке ниже, заходим в Mini App, зацениваем магазин и новости! 🚀`,
+        Markup.inlineKeyboard([
+            [Markup.button.webApp('Открыть Mini App', MINI_APP_URL)]
+        ])
+    );
+});
+
+bot.hears(/^(!магазин|магазин)/i, async (ctx) => {
+    await ctx.reply(`🛒 Открой Mini App, чтобы зайти в магазин и купить уникальные награды за сезонную валюту!`,
+        Markup.inlineKeyboard([
+            [Markup.button.webApp('Перейти в магазин', MINI_APP_URL)]
+        ])
+    );
+});
+
+bot.hears(/^(!профиль|профиль)/i, async (ctx) => {
+    const user = await User.findOne({ userId: ctx.from.id });
+    if (!user) return ctx.reply(`Сначала нажми /start!`);
+    await ctx.reply(`👤 Твой профиль:\n💰 Очки: ${user.points || 0}\n⭐ Сезонная валюта: ${user.season_currency || 0}\n🏆 Уровень: ${user.level || 1}`);
+});
+
+// Функция трекинга сообщений в БД (с начислением очков, уровней и сезонной валюты)
 async function trackMessage(userId, username, chatId) {
     let user = await User.findOne({ userId });
     if (!user) {
-        user = new User({ userId, username, chats: {}, points: 0, level: 1, warnings: {}, verified: true });
+        user = new User({ userId, username, chats: {}, points: 0, level: 1, season_currency: 0, warnings: {}, verified: true });
     }
     
     chatId = chatId.toString();
@@ -84,8 +123,9 @@ async function trackMessage(userId, username, chatId) {
     user.chats[chatId].week = (user.chats[chatId].week || 0) + 1;
     user.chats[chatId].month = (user.chats[chatId].month || 0) + 1;
     
-    // Начисление очков (1 сообщение = 10 очков) и расчет уровня
+    // Начисление очков (1 сообщение = 10 очков), сезонной валюты и расчет уровня
     user.points = (user.points || 0) + 10;
+    user.season_currency = (user.season_currency || 0) + 1;
     user.level = Math.floor(user.points / 500) + 1;
 
     user.username = username || user.username;
@@ -177,11 +217,11 @@ bot.start(async (ctx) => {
             }
         );
     } else {
-        return ctx.reply("🌌 Бот Together Universe активирован в этом чате! Начинаем копить очки.");
+        return ctx.reply("🌌 Бот Together Universe активирован в этом чате! Начинаем копить очки и сезонную валюту.");
     }
 });
 
-// Команда "кто я" (с поддержкой титулов и описания, если они есть)
+// Команда "кто я"
 bot.hears(/^кто я$/i, async (ctx) => {
     const userId = ctx.from.id;
     const chatId = ctx.chat.id.toString();
@@ -201,6 +241,7 @@ bot.hears(/^кто я$/i, async (ctx) => {
         `👤 Резидент: @${user.username || ctx.from.first_name}` +
         titleText + frameText + descText + `\n` +
         `🌟 Очки: ${user.points || 0} (Левел ${user.level || 1})\n` +
+        `⭐ Сезонная валюта: ${user.season_currency || 0}\n` +
         `💬 Сообщений (всего): ${stats.all}`,
         { parse_mode: "Markdown" }
     );
@@ -210,13 +251,13 @@ bot.hears(/^кто я$/i, async (ctx) => {
 bot.command('setdesc', async (ctx) => {
     const text = ctx.message.text.replace('/setdesc', '').trim();
     if (!text) {
-        return ctx.reply("Напиши текст после команды, например: `/setdesc Живу музыкой!`",  );
+        return ctx.reply("Напиши текст после команды, например: `/setdesc Живу музыкой!`");
     }
     await User.updateOne({ userId: ctx.from.id }, { description: text });
     await ctx.reply("Твой статус успешно обновлен! ✨");
 });
 
-// Команды топов (topall, topday, etc)
+// Команды топов
 bot.command(['topall', 'topday', 'topweek', 'topmonth'], async (ctx) => {
     try {
         const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
@@ -247,14 +288,14 @@ bot.command(['topall', 'topday', 'topweek', 'topmonth'], async (ctx) => {
             topText += `${i + 1}. @${item.username || 'Резидент'} — ${item.count} сообщ.\n`;
         });
 
-        ctx.reply(topText || "Пока пусто!", );
+        ctx.reply(topText || "Пока пусто!");
     } catch (e) {
         console.error(e);
         ctx.reply("Ошибка при получении топа.");
     }
 });
 
-// Трекинг сообщений (с проверкой прохождения капчи)
+// Трекинг сообщений
 bot.on('text', async (ctx, next) => {
     if (ctx.message.text.startsWith('/')) return next();
     
@@ -364,7 +405,7 @@ bot.command('warns', async (ctx) => {
     ctx.reply(`📌 Ваши предупреждения в этом чате: ${warns} из 3.`);
 });
 
-// Система быстрой чистки сообщений (/clear)
+// Система чистки сообщений (/clear)
 bot.command(['clear', 'clean'], async (ctx) => {
     try {
         const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
@@ -398,7 +439,7 @@ bot.command(['clear', 'clean'], async (ctx) => {
     }
 });
 
-// Включить/выключить статус отдыха (/rest)
+// Статус отдыха (/rest)
 bot.command('rest', async (ctx) => {
     try {
         const userId = ctx.from.id;
@@ -422,7 +463,7 @@ bot.command('rest', async (ctx) => {
         await user.save();
 
         if (user.isResting) {
-            return ctx.reply(`🏖️ Пользователь @${targetName} отправлен на **рест (отдых)**. Чистка его не тронет!`, );
+            return ctx.reply(`🏖️ Пользователь @${targetName} отправлен на **рест (отдых)**. Чистка его не тронет!`);
         } else {
             return ctx.reply(`⚡ Пользователь @${targetName} вернулся с отдыха и снова участвует в проверках активности.`);
         }
@@ -432,7 +473,7 @@ bot.command('rest', async (ctx) => {
     }
 });
 
-// Универсальная логика проверки активности (с нормой месяца 300 и варнами вместо киков)
+// Проверка активности
 async function handleCheckCommand(ctx) {
     try {
         const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
@@ -469,21 +510,19 @@ async function handleCheckCommand(ctx) {
             return ctx.reply(`✅ Все активны ${periodNames[period]} или находятся на ресте! Варны не нужны.`);
         }
 
-            let list = `🧹 **Кандидаты на предупреждение (${periodNames[period]}, меньше ${minMessages} сообщ.):**\n*(Те, кто на ресте — защищены)*\n\n`;
+        let list = `🧹 **Кандидаты на предупреждение (${periodNames[period]}, меньше ${minMessages} сообщ.):**\n*(Те, кто на ресте — защищены)*\n\n`;
         lazyUsers.forEach(item => {
             list += `👤 @${item.user.username || 'Без юзернейма'} — ${item.count} сообщ.\n`;
         });
         
-            ctx.reply(list, {
-        reply_markup: {
-            inline_keyboard: [[{
-                text: "⚠️ Выдать варны неактивным",
-                callback_data: `warn_lazy_${period}_${minMessages}`
-            }]]
-        }
-    });
-
-
+        ctx.reply(list, {
+            reply_markup: {
+                inline_keyboard: [[{
+                    text: "⚠️ Выдать варны неактивным",
+                    callback_data: `warn_lazy_${period}_${minMessages}`
+                }]]
+            }
+        });
     } catch (e) {
         console.error(e);
         ctx.reply("Ошибка при запуске проверки.");
@@ -492,7 +531,6 @@ async function handleCheckCommand(ctx) {
 
 bot.command('check', handleCheckCommand);
 
-// Кнопка выдачи варнов вместо кика при проверке
 bot.action(/^warn_lazy_(day|week|month|all)_(\d+)$/, async (ctx) => {
     try {
         const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
@@ -533,7 +571,6 @@ bot.action(/^warn_lazy_(day|week|month|all)_(\d+)$/, async (ctx) => {
     }
 });
 
-// Короткие команды с поддержкой имени бота в группах
 bot.hears(/^\/checkday(@\w+)?$/, async (ctx) => {
     ctx.message.text = '/check day 10';
     return handleCheckCommand(ctx);
@@ -549,12 +586,10 @@ bot.hears(/^\/checkmonth(@\w+)?$/, async (ctx) => {
     return handleCheckCommand(ctx);
 });
 
-
 app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
     bot.handleUpdate(req.body, res);
 });
 
-// И убедись, что при старте сервера ты говоришь Телеграму, куда слать сообщения:
 SERVER_PORT = process.env.PORT || 10000; 
 app.listen(SERVER_PORT, '0.0.0.0', async () => {
     console.log(`Сервер запущен на порту ${SERVER_PORT}!`);
@@ -562,7 +597,5 @@ app.listen(SERVER_PORT, '0.0.0.0', async () => {
     await bot.telegram.setWebhook(webhookUrl);
     console.log("Webhook установлен!");
 });
-
-
 
 console.log("Бот запущен с MongoDB и всеми обновлениями!");
