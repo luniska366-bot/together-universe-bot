@@ -31,14 +31,9 @@
             padding-bottom: 110px;
         }
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--card-bg);
-            padding: 12px 16px;
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--card-bg); padding: 12px 16px; border-radius: 16px;
+            border: 1px solid var(--border); margin-bottom: 15px;
         }
         .profile-info { display: flex; align-items: center; gap: 12px; }
         .avatar {
@@ -51,10 +46,9 @@
         .avatar img { width: 100%; height: 100%; object-fit: cover; }
         
         .banner {
-            background: var(--accent-gradient);
-            color: white; padding: 15px; border-radius: 14px;
-            margin-bottom: 15px; text-align: center; font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            background: var(--accent-gradient); color: white; padding: 15px;
+            border-radius: 14px; margin-bottom: 15px; text-align: center;
+            font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
         button, select, input {
@@ -63,7 +57,6 @@
             border-radius: 10px; cursor: pointer; font-size: 14px;
         }
         
-        /* Исправленный «островок» с горизонтальной прокруткой */
         .glass-dock {
             position: fixed !important; bottom: 15px !important; left: 50% !important;
             transform: translateX(-50%) !important; display: flex !important; gap: 6px;
@@ -71,7 +64,7 @@
             border: 1px solid rgba(255, 255, 255, 0.15); padding: 6px 10px;
             border-radius: 20px; z-index: 999999 !important; 
             max-width: 90vw; overflow-x: auto; white-space: nowrap;
-            scrollbar-width: none; /* Скрываем скроллбар для красоты */
+            scrollbar-width: none;
         }
         .glass-dock::-webkit-scrollbar { display: none; }
         
@@ -92,7 +85,7 @@
             <div>
                 <div id="userName" style="font-weight: bold; font-size: 16px;">Макар</div>
                 <div style="font-size: 13px; opacity: 0.8; margin-top: 2px;">
-                    🌟 <span id="userBalance">0</span> | ⭐ <span id="userSeasonCurrency">0</span> | 📈 Лев. <span id="userLevel">1</span>
+                    🌟 <span id="userBalance">0</span> | 🥥 <span id="userSeasonCurrency">0</span> | 📈 Лев. <span id="userLevel">1</span>
                 </div>
             </div>
         </div>
@@ -146,7 +139,7 @@
         </div>
     </div>
 
-    <!-- Панель Администратора (Скрыта для всех, кроме тебя) -->
+    <!-- Панель Администратора -->
     <div id="admin" class="section">
         <h3 style="margin-top: 0;">⚙️ Панель Администратора</h3>
         
@@ -154,17 +147,18 @@
             <h4>➕ Добавить Новость</h4>
             <input type="text" id="newsTitle" placeholder="Заголовок" style="width: 90%; margin-bottom: 8px;"><br>
             <input type="text" id="newsText" placeholder="Текст новости" style="width: 90%; margin-bottom: 8px;"><br>
-            <input type="text" id="newsMedia" placeholder="URL картинки/видео (необязательно)" style="width: 90%; margin-bottom: 8px;"><br>
+            <input type="text" id="newsMedia" placeholder="URL картинки (например с Postimages)" style="width: 90%; margin-bottom: 8px;"><br>
             <button onclick="addNews()" style="background: var(--accent-gradient); color: white; width: 100%;">Создать новость</button>
         </div>
 
         <div class="card">
             <h4>🛍 Создать Товар в Магазине</h4>
             <input type="text" id="shopName" placeholder="Название товара" style="width: 90%; margin-bottom: 8px;"><br>
-            <input type="number" id="shopPrice" placeholder="Цена (цифра)" style="width: 90%; margin-bottom: 8px;"><br>
+            <input type="number" id="shopPrice" placeholder="Цена (цифра, для бесплатных 0)" style="width: 90%; margin-bottom: 8px;"><br>
             <select id="shopCurrency" style="width: 96%; margin-bottom: 8px;">
                 <option value="stars">Звезды 🌟</option>
-                <option value="season">Сезонная валюта</option>
+                <option value="season">Сезонная валюта (🥥)</option>
+                <option value="free">Бесплатно 🎁</option>
             </select><br>
             <select id="shopType" style="width: 96%; margin-bottom: 8px;">
                 <option value="title">Титул</option>
@@ -177,7 +171,7 @@
                 <option value="temporary">Временный</option>
                 <option value="limited">Лимитированный</option>
             </select><br>
-            <input type="text" id="shopImage" placeholder="URL картинки" style="width: 90%; margin-bottom: 8px;"><br>
+            <input type="text" id="shopImage" placeholder="URL картинки товара (необязательно)" style="width: 90%; margin-bottom: 8px;"><br>
             <button onclick="addShopItem()" style="background: var(--accent-gradient); color: white; width: 100%;">Создать товар</button>
         </div>
 
@@ -198,7 +192,6 @@
         <button onclick="switchTab('events', this); loadEvents();">⚡ Ивенты</button>
         <button onclick="switchTab('tops', this); loadLeaderboard('all');">🏆 Топы</button>
         <button onclick="switchTab('profile', this)">👤 Профиль</button>
-        <!-- Кнопка админа динамически добавится сюда только для тебя -->
     </div>
 
     <script>
@@ -206,9 +199,7 @@
         tg.expand();
         const API_URL = "https://together-universe-bot.onrender.com";
         let currentUserId = String(tg.initDataUnsafe?.user?.id || "123456789");
-
-        // ТВОЙ АДМИНСКИЙ ID (сюда будет доступ к панели)
-        const ADMIN_ID = "123456789"; // При необходимости замени на свой реальный Telegram ID
+        const ADMIN_ID = "8970685551";
 
         async function initUser() {
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -220,8 +211,7 @@
                 }
             }
 
-            // Проверяем админ ли это, и если да — добавляем кнопку в меню
-            if (currentUserId === ADMIN_ID || currentUserId === "ТВОЙ_РЕАЛЬНЫЙ_ID_ЗДЕСЬ") {
+            if (currentUserId === ADMIN_ID) {
                 let dock = document.getElementById('dockMenu');
                 let adminBtn = document.createElement('button');
                 adminBtn.innerText = "⚙️ Админ";
@@ -229,6 +219,12 @@
                 dock.appendChild(adminBtn);
             }
 
+            await refreshUserData();
+            loadNews();
+        }
+        initUser();
+
+        async function refreshUserData() {
             try {
                 let resp = await fetch(`${API_URL}/api/user-data?userId=${currentUserId}`);
                 let data = await resp.json();
@@ -239,9 +235,7 @@
                 document.getElementById('profileFrameVal').innerText = data.activeFrame || 'Нет';
                 document.getElementById('profileAchVal').innerText = data.achievements?.length ? data.achievements.join(', ') : 'Пока нет';
             } catch(e) {}
-            loadNews();
         }
-        initUser();
 
         function switchTab(tabId, btn) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -279,9 +273,48 @@
             let items = await resp.json();
             let c = document.getElementById('shopContainer');
             c.innerHTML = items.length ? '' : '<div class="card">Магазин пуст.</div>';
+            
             items.forEach(i => {
-                c.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;"><div><h4>${i.name}</h4><span>Цена: ${i.price} (${i.currency})</span></div><button onclick="alert('Покупка!')">Купить</button></div>`;
+                let currencySign = i.currency === 'season' ? '🥥' : (i.currency === 'free' ? '🎁 Бесплатно' : '🌟');
+                let priceText = i.currency === 'free' ? '' : `Цена: ${i.price} ${currencySign}`;
+                let imgTag = i.image ? `<img src="${i.image}" style="width:100%; max-height:120px; object-fit:cover; border-radius:8px; margin-bottom:8px;">` : '';
+                let deleteBtn = (currentUserId === ADMIN_ID) ? `<button onclick="deleteShopItem('${i.itemId}')" style="background:#da3633; color:white; margin-top:8px; width:100%;">🗑 Удалить товар</button>` : '';
+
+                c.innerHTML += `
+                    <div class="card">
+                        ${imgTag}
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <h4 style="margin:0 0 4px 0;">${i.name}</h4>
+                                <span style="font-size:13px; opacity:0.8;">${priceText} (${i.type})</span>
+                            </div>
+                            <button onclick="buyItem('${i.itemId}')" style="background:var(--accent-gradient); color:white;">Купить</button>
+                        </div>
+                        ${deleteBtn}
+                    </div>`;
             });
+        }
+
+        async function buyItem(itemId) {
+            let resp = await fetch(`${API_URL}/api/shop/buy`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ userId: currentUserId, itemId })
+            });
+            let result = await resp.json();
+            if (result.success) {
+                alert('🎉 Успешная покупка! Предмет добавлен в инвентарь.');
+                refreshUserData();
+            } else {
+                alert('❌ Ошибка: ' + (result.error || 'Не удалось купить'));
+            }
+        }
+
+        async function deleteShopItem(itemId) {
+            if (!confirm('Точно удалить этот товар из магазина?')) return;
+            await fetch(`${API_URL}/api/shop/delete?itemId=${itemId}`, { method: 'DELETE' });
+            alert('Товар удален!');
+            loadShop();
         }
 
         async function loadEvents() {
@@ -320,16 +353,17 @@
         }
 
         async function addShopItem() {
+            const currencyVal = document.getElementById('shopCurrency').value;
             const data = {
                 itemId: 'item_' + Date.now(),
                 name: document.getElementById('shopName').value,
-                price: document.getElementById('shopPrice').value,
-                currency: document.getElementById('shopCurrency').value,
+                price: currencyVal === 'free' ? 0 : Number(document.getElementById('shopPrice').value),
+                currency: currencyVal,
                 type: document.getElementById('shopType').value,
-                accessType: document.getElementById('shopAccess'.value),
-                image: document.getElementById('shopImage').value
+                accessType: document.getElementById('shopAccess').value,
+                image: document.getElementById('shopImage').value || null
             };
-            if (!data.name || !data.price) return alert('Заполни название и цену!');
+            if (!data.name) return alert('Заполни название товара!');
             await fetch(`${API_URL}/api/shop/add`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
             alert('Товар создан!');
             loadShop();
