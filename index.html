@@ -45,11 +45,10 @@
         }
         .avatar img { width: 100%; height: 100%; object-fit: cover; }
         
-        .banner {
-            background: var(--accent-gradient); color: white; padding: 15px;
-            border-radius: 14px; margin-bottom: 15px; text-align: center;
-            font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
+        /* WB-слайдер */
+        .slider-container { width: 100%; height: 160px; overflow: hidden; border-radius: 16px; margin-bottom: 15px; position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .slider-wrapper { display: flex; transition: transform 0.5s ease-in-out; height: 100%; }
+        .banner-slide { min-width: 100%; height: 100%; background-size: cover; background-position: center; border-radius: 16px; }
 
         button, select, input {
             background: var(--card-bg); color: var(--text-color);
@@ -91,8 +90,11 @@
         </div>
     </div>
 
-    <div class="banner">
-        🔥 Хит сезона: Уникальные рамки и титулы уже в магазине! Залетай и забирай! 🚀
+    <!-- WB-слайдер баннеров -->
+    <div class="slider-container">
+        <div class="slider-wrapper" id="bannerWrapper">
+            <div class="banner-slide" style="background: var(--accent-gradient); display:flex; align-items:center; justify-content:center; color:white; font-weight:bold;">Загрузка баннеров... 🚀</div>
+        </div>
     </div>
 
     <!-- Главная (Новости) -->
@@ -144,17 +146,24 @@
         <h3 style="margin-top: 0;">⚙️ Панель Администратора</h3>
         
         <div class="card">
+            <h4>🖼 Управление баннерами (WB-слайдер)</h4>
+            <input type="text" id="banImg" placeholder="URL картинки баннера" style="width: 90%; margin-bottom: 8px;"><br>
+            <button onclick="addBanner()" style="background: var(--accent-gradient); color: white; width: 100%; margin-bottom: 12px;">Добавить баннер</button>
+            <div id="adminBannersContainer">Загрузка баннеров...</div>
+        </div>
+
+        <div class="card">
             <h4>➕ Добавить Новость</h4>
             <input type="text" id="newsTitle" placeholder="Заголовок" style="width: 90%; margin-bottom: 8px;"><br>
             <input type="text" id="newsText" placeholder="Текст новости" style="width: 90%; margin-bottom: 8px;"><br>
-            <input type="text" id="newsMedia" placeholder="URL картинки (например с Postimages)" style="width: 90%; margin-bottom: 8px;"><br>
+            <input type="text" id="newsMedia" placeholder="URL картинки" style="width: 90%; margin-bottom: 8px;"><br>
             <button onclick="addNews()" style="background: var(--accent-gradient); color: white; width: 100%;">Создать новость</button>
         </div>
 
         <div class="card">
             <h4>🛍 Создать Товар в Магазине</h4>
             <input type="text" id="shopName" placeholder="Название товара" style="width: 90%; margin-bottom: 8px;"><br>
-            <input type="number" id="shopPrice" placeholder="Цена (цифра, для бесплатных 0)" style="width: 90%; margin-bottom: 8px;"><br>
+            <input type="number" id="shopPrice" placeholder="Цена (для бесплатных 0)" style="width: 90%; margin-bottom: 8px;"><br>
             <select id="shopCurrency" style="width: 96%; margin-bottom: 8px;">
                 <option value="stars">Звезды 🌟</option>
                 <option value="season">Сезонная валюта (🥥)</option>
@@ -171,7 +180,7 @@
                 <option value="temporary">Временный</option>
                 <option value="limited">Лимитированный</option>
             </select><br>
-            <input type="text" id="shopImage" placeholder="URL картинки товара (необязательно)" style="width: 90%; margin-bottom: 8px;"><br>
+            <input type="text" id="shopImage" placeholder="URL картинки товара" style="width: 90%; margin-bottom: 8px;"><br>
             <button onclick="addShopItem()" style="background: var(--accent-gradient); color: white; width: 100%;">Создать товар</button>
         </div>
 
@@ -201,6 +210,9 @@
         let currentUserId = String(tg.initDataUnsafe?.user?.id || "123456789");
         const ADMIN_ID = "8970685551";
 
+        let currentSlide = 0;
+        let slideInterval = null;
+
         async function initUser() {
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 let user = tg.initDataUnsafe.user;
@@ -215,11 +227,12 @@
                 let dock = document.getElementById('dockMenu');
                 let adminBtn = document.createElement('button');
                 adminBtn.innerText = "⚙️ Админ";
-                adminBtn.onclick = function() { switchTab('admin', this); };
+                adminBtn.onclick = function() { switchTab('admin', this); loadAdminBanners(); };
                 dock.appendChild(adminBtn);
             }
 
             await refreshUserData();
+            loadBanners();
             loadNews();
         }
         initUser();
@@ -235,6 +248,61 @@
                 document.getElementById('profileFrameVal').innerText = data.activeFrame || 'Нет';
                 document.getElementById('profileAchVal').innerText = data.achievements?.length ? data.achievements.join(', ') : 'Пока нет';
             } catch(e) {}
+        }
+
+        // --- Логика WB-слайдера с автолистанием ---
+        async function loadBanners() {
+            try {
+                let resp = await fetch(`${API_URL}/api/banners`);
+                let banners = await resp.json();
+                let wrapper = document.getElementById('bannerWrapper');
+                if (!banners.length) {
+                    wrapper.innerHTML = `<div class="banner-slide" style="background: var(--accent-gradient); display:flex; align-items:center; justify-content:center; color:white; font-weight:bold;">Добавь баннеры в админке! 🚀</div>`;
+                    return;
+                }
+                wrapper.innerHTML = '';
+                banners.forEach(b => {
+                    wrapper.innerHTML += `<div class="banner-slide" style="background-image: url('${b.imageUrl}')"></div>`;
+                });
+
+                if (slideInterval) clearInterval(slideInterval);
+                slideInterval = setInterval(() => {
+                    currentSlide = (currentSlide + 1) % banners.length;
+                    wrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
+                }, 5000);
+            } catch(e) {}
+        }
+
+        async function addBanner() {
+            let imgUrl = document.getElementById('banImg').value;
+            if (!imgUrl) return alert('Вставь ссылку на картинку баннера!');
+            const data = { id: 'b_' + Date.now(), imageUrl: imgUrl };
+            await fetch(`${API_URL}/api/banners/add`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+            alert('Баннер успешно добавлен!');
+            document.getElementById('banImg').value = '';
+            loadBanners();
+            loadAdminBanners();
+        }
+
+        async function loadAdminBanners() {
+            let resp = await fetch(`${API_URL}/api/banners`);
+            let banners = await resp.json();
+            let c = document.getElementById('adminBannersContainer');
+            c.innerHTML = banners.length ? '' : 'Нет баннеров.';
+            banners.forEach(b => {
+                c.innerHTML += `
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; background:rgba(255,255,255,0.05); padding:6px; border-radius:8px;">
+                        <img src="${b.imageUrl}" style="width:60px; height:30px; object-fit:cover; border-radius:4px;">
+                        <button onclick="deleteBanner('${b.id}')" style="background:#da3633; color:white; padding:4px 8px; font-size:12px;">Удалить</button>
+                    </div>`;
+            });
+        }
+
+        async function deleteBanner(id) {
+            if (!confirm('Удалить этот баннер?')) return;
+            await fetch(`${API_URL}/api/banners/delete?id=${id}`, { method: 'DELETE' });
+            loadBanners();
+            loadAdminBanners();
         }
 
         function switchTab(tabId, btn) {
@@ -254,7 +322,6 @@
             let news = await resp.json();
             let c = document.getElementById('newsContainer');
             c.innerHTML = news.length ? '' : '<div class="card">Нет новостей.</div>';
-            
             news.forEach(n => {
                 let deleteBtn = (currentUserId === ADMIN_ID) ? `<button onclick="deleteNews('${n.newsId}')" style="background:#da3633; color:white; margin-top:8px; width:100%;">🗑 Удалить новость</button>` : '';
                 c.innerHTML += `<div class="card"><h4>${n.title}</h4><p>${n.text}</p>${n.mediaUrl ? `<img src="${n.mediaUrl}" style="width:100%; border-radius:8px; margin-top:8px;">` : ''}${deleteBtn}</div>`;
@@ -264,7 +331,6 @@
         async function deleteNews(newsId) {
             if (!confirm('Точно удалить эту новость?')) return;
             await fetch(`${API_URL}/api/news/delete?newsId=${newsId}`, { method: 'DELETE' });
-            alert('Новость удалена!');
             loadNews();
         }
 
@@ -273,7 +339,6 @@
             let items = await resp.json();
             let c = document.getElementById('shopContainer');
             c.innerHTML = items.length ? '' : '<div class="card">Магазин пуст.</div>';
-            
             items.forEach(i => {
                 let currencySign = i.currency === 'season' ? '🥥' : (i.currency === 'free' ? '🎁 Бесплатно' : '🌟');
                 let priceText = i.currency === 'free' ? '' : `Цена: ${i.price} ${currencySign}`;
@@ -303,7 +368,7 @@
             });
             let result = await resp.json();
             if (result.success) {
-                alert('🎉 Успешная покупка! Предмет добавлен в инвентарь.');
+                alert('🎉 Успешная покупка!');
                 refreshUserData();
             } else {
                 alert('❌ Ошибка: ' + (result.error || 'Не удалось купить'));
@@ -311,9 +376,8 @@
         }
 
         async function deleteShopItem(itemId) {
-            if (!confirm('Точно удалить этот товар из магазина?')) return;
+            if (!confirm('Точно удалить этот товар?')) return;
             await fetch(`${API_URL}/api/shop/delete?itemId=${itemId}`, { method: 'DELETE' });
-            alert('Товар удален!');
             loadShop();
         }
 
@@ -347,7 +411,7 @@
             };
             if (!data.title || !data.text) return alert('Заполни заголовок и текст!');
             await fetch(`${API_URL}/api/news/add`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
-            alert('Новость успешно добавлена!');
+            alert('Новость добавлена!');
             document.getElementById('newsTitle').value = ''; document.getElementById('newsText').value = ''; document.getElementById('newsMedia').value = '';
             loadNews();
         }
@@ -357,12 +421,14 @@
             const data = {
                 itemId: 'item_' + Date.now(),
                 name: document.getElementById('shopName').value,
-                price: currencyVal === 'free' ? 0 : Number(document.getElementById('shopPrice').value),
+                price: currencyVal === 'free' ? 0 : Number(document.ind('shopPrice').value),
                 currency: currencyVal,
                 type: document.getElementById('shopType').value,
                 accessType: document.getElementById('shopAccess').value,
                 image: document.getElementById('shopImage').value || null
             };
+            // Небольшая поправка для безошибочного считывания цены
+            data.price = currencyVal === 'free' ? 0 : Number(document.getElementById('shopPrice').value);
             if (!data.name) return alert('Заполни название товара!');
             await fetch(`${API_URL}/api/shop/add`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
             alert('Товар создан!');
