@@ -431,6 +431,16 @@ bot.on('text', async (ctx, next) => {
     return next();
 });
 
+app.delete('/api/news/delete', async (req, res) => {
+    try {
+        const { newsId } = req.query;
+        await News.deleteOne({ newsId });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 
 app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
     bot.handleUpdate(req.body, res);
