@@ -57,11 +57,11 @@ app.listen(PORT, () => {
 const bot = new Telegraf("8708472061:AAGsyYm8RhgDlqpyeEiGwYlbnXFZwKdTI2M");
 const MINI_APP_URL = "https://luniska366-bot.github.io/together-universe-bot/";
 
-// Функция трекинга сообщений в БД (чтобы бот не падал при сообщениях)
+// Функция трекинга сообщений в БД (с начислением очков и уровней)
 async function trackMessage(userId, username, chatId) {
     let user = await User.findOne({ userId });
     if (!user) {
-        user = new User({ userId, username, chats: {}, points: 0, warnings: {} });
+        user = new User({ userId, username, chats: {}, points: 0, level: 1, warnings: {}, verified: true });
     }
     
     chatId = chatId.toString();
@@ -74,11 +74,79 @@ async function trackMessage(userId, username, chatId) {
     user.chats[chatId].day = (user.chats[chatId].day || 0) + 1;
     user.chats[chatId].week = (user.chats[chatId].week || 0) + 1;
     user.chats[chatId].month = (user.chats[chatId].month || 0) + 1;
+    
+    // Начисление очков (1 сообщение = 10 очков) и расчет уровня
+    user.points = (user.points || 0) + 10;
+    user.level = Math.floor(user.points / 500) + 1;
+
     user.username = username || user.username;
     
     user.markModified('chats');
     await user.save();
 }
+
+// --- 1. КАПЧА ДЛЯ НОВЫХ УЧАСТНИКОВ ---
+bot.on('chat_member', async (ctx) => {
+    const newMember = ctx.chatMember.new_chat_member;
+    const oldMember = ctx.chatMember.old_chat_member;
+
+    if (oldMember.status === 'left' && (newMember.status === 'member' || newMember.status === 'restricted')) {
+        const userId = newMember.user.id;
+        const userName = newMember.user.first_name || 'друг';
+
+        let user = await User.findOne({ userId });
+        if (!user) {
+            user = new User({ userId, username: userName, verified: false, chats: {}, warnings: {} });
+            await user.save();
+        } else {
+            user.verified = false;
+            await user.save();
+        }
+
+        try {
+            await ctx.telegram.restrictChatMember(ctx.chat.id, userId, {
+                permissions: { can_send_messages: false }
+            });
+        } catch (err) {
+            console.log("Не удалось ограничить права для капчи:", err);
+        }
+
+        await ctx.reply(
+            `Привет, ${userName}! 💖 Добро пожаловать. Нажми на кнопку ниже в течение 3 минут, чтобы доказать, что ты не бот!`,
+            {
+                reply_markup: {
+                    inline_keyboard: [[{ text: "🐈 Я человек (Пройти капчу)", callback_data: `verify_${userId}` }]]
+                }
+            }
+        );
+    }
+});
+
+bot.action(/^verify_(\d+)$/, async (ctx) => {
+    const targetUserId = parseInt(ctx.match[1]);
+    const userId = ctx.from.id;
+
+    if (userId !== targetUserId) {
+        return ctx.answerCbQuery("Эта кнопка не для тебя, солнышко! ✨", { show_alert: true });
+    }
+
+    try {
+        await ctx.telegram.restrictChatMember(ctx.chat.id, userId, {
+            permissions: {
+                can_send_messages: true,
+                can_send_media_messages: true,
+                can_send_other_messages: true,
+                can_add_web_page_previews: true
+            }
+        });
+    } catch (err) {
+        console.log("Не удалось вернуть права:", err);
+    }
+
+    await User.updateOne({ userId }, { verified: true });
+    await ctx.answerCbQuery("Успешно! Добро пожаловать!");
+    await ctx.editMessageText(`Успешно! ${ctx.from.first_name} прошел проверку и готов общаться! 🌟`);
+});
 
 // Команда /start
 bot.start(async (ctx) => {
@@ -89,7 +157,7 @@ bot.start(async (ctx) => {
     if (!isGroup) {
         let user = await User.findOne({ userId });
         if (!user) {
-            await new User({ userId, username, chats: {}, warnings: {} }).save();
+            await new User({ userId, username, chats: {}, warnings: {}, verified: true }).save();
         }
         return ctx.reply(
             `Привет, ${ctx.from.first_name}! 🌌\n\nТвой паспорт Юниверса готов.`,
@@ -104,10 +172,10 @@ bot.start(async (ctx) => {
     }
 });
 
-// Команда "кто я"
+// Команда "кто я" (с поддержкой титулов и описания, если они есть)
 bot.hears(/^кто я$/i, async (ctx) => {
     const userId = ctx.from.id;
-    const chatId = ctx.chat.id;
+    const chatId = ctx.chat.id.toString();
     const user = await User.findOne({ userId });
 
     if (!user || !user.chats || !user.chats[chatId]) {
@@ -115,13 +183,28 @@ bot.hears(/^кто я$/i, async (ctx) => {
     }
 
     const stats = user.chats[chatId];
+    const titleText = user.activeTitle ? `\n🏷 Титул: ${user.activeTitle}` : '';
+    const frameText = user.activeFrame ? `\n🖼 Рамка: ${user.activeFrame}` : '';
+    const descText = user.description ? `\n💬 Статус: ${user.description}` : '';
+
     ctx.reply(
         `🪪 **Паспорт Юниверса**\n\n` +
-        `👤 Резидент: @${user.username}\n` +
-        `🌟 Очки: ${user.points || 0}\n` +
+        `👤 Резидент: @${user.username || ctx.from.first_name}` +
+        titleText + frameText + descText + `\n` +
+        `🌟 Очки: ${user.points || 0} (Левел ${user.level || 1})\n` +
         `💬 Сообщений (всего): ${stats.all}`,
         { parse_mode: "Markdown" }
     );
+});
+
+// Команда установки статуса
+bot.command('setdesc', async (ctx) => {
+    const text = ctx.message.text.replace('/setdesc', '').trim();
+    if (!text) {
+        return ctx.reply("Напиши текст после команды, например: `/setdesc Живу музыкой!`", { parse_mode: 'Markdown' });
+    }
+    await User.updateOne({ userId: ctx.from.id }, { description: text });
+    await ctx.reply("Твой статус успешно обновлен! ✨");
 });
 
 // Команды топов (topall, topday, etc)
@@ -162,13 +245,24 @@ bot.command(['topall', 'topday', 'topweek', 'topmonth'], async (ctx) => {
     }
 });
 
-// Трекинг сообщений
-bot.on('text', (ctx, next) => {
+// Трекинг сообщений (с проверкой прохождения капчи)
+bot.on('text', async (ctx, next) => {
     if (ctx.message.text.startsWith('/')) return next();
-    const userId = ctx.from.id;
-    const username = ctx.from.username || ctx.from.first_name;
-    const chatId = ctx.chat.id;
-    trackMessage(userId, username, chatId);
+    
+    if (ctx.chat.type !== 'private') {
+        const userId = ctx.from.id;
+        const user = await User.findOne({ userId });
+        if (user && user.verified === false) {
+            try {
+                await ctx.deleteMessage();
+            } catch (e) {}
+            return;
+        }
+
+        const username = ctx.from.username || ctx.from.first_name;
+        const chatId = ctx.chat.id;
+        await trackMessage(userId, username, chatId);
+    }
     return next();
 });
 
@@ -208,9 +302,10 @@ bot.command('warn', async (ctx) => {
         if (currentWarns >= 3) {
             try {
                 await ctx.telegram.restrictChatMember(ctx.chat.id, targetId, {
+                    until_date: Math.floor(Date.now() / 1000) + 3600,
                     permissions: { can_send_messages: false }
                 });
-                ctx.reply(`🚫 У @${targetUsername} накопилось 3 предупреждения, выдан мут!`);
+                ctx.reply(`🚫 У @${targetUsername} накопилось 3 предупреждения, выдан мут на 1 час!`);
             } catch (e) {
                 console.log("Не удалось замутить:", e);
             }
@@ -328,7 +423,7 @@ bot.command('rest', async (ctx) => {
     }
 });
 
-// Универсальная логика проверки активности
+// Универсальная логика проверки активности (с нормой месяца 300 и варнами вместо киков)
 async function handleCheckCommand(ctx) {
     try {
         const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
@@ -337,9 +432,9 @@ async function handleCheckCommand(ctx) {
         }
 
         const args = ctx.message.text.split(' ');
-        const period = args[1] && ['day', 'week', 'month', 'all'].includes(args[1]) ? args[1] : 'week';
+        const period = args[1] && ['day', 'week', 'month', 'all'].includes(args[1]) ? args[1] : 'month';
         
-        const defaultNorms = { day: 10, week: 70, month: 150, all: 200 };
+        const defaultNorms = { day: 10, week: 100, month: 300, all: 300 };
         const minMessages = parseInt(args[2]) || defaultNorms[period];
         
         const chatId = ctx.chat.id.toString();
@@ -362,10 +457,10 @@ async function handleCheckCommand(ctx) {
         });
 
         if (lazyUsers.length === 0) {
-            return ctx.reply(`✅ Все активны ${periodNames[period]} или находятся на ресте! Чистка не нужна.`);
+            return ctx.reply(`✅ Все активны ${periodNames[period]} или находятся на ресте! Варны не нужны.`);
         }
 
-        let list = `🧹 **Кандидаты на вылет (${periodNames[period]}, меньше ${minMessages} сообщ.):**\n*(Те, кто на ресте — защищены)*\n\n`;
+        let list = `🧹 **Кандидаты на предупреждение (${periodNames[period]}, меньше ${minMessages} сообщ.):**\n*(Те, кто на ресте — защищены)*\n\n`;
         lazyUsers.forEach(item => {
             list += `👤 @${item.user.username || 'Без юзернейма'} — ${item.count} сообщ.\n`;
         });
@@ -373,7 +468,7 @@ async function handleCheckCommand(ctx) {
         ctx.reply(list, {
             parse_mode: "Markdown",
             reply_markup: {
-                inline_keyboard: [[{ text: "🔥 Выгнать неактивных", callback_data: `kick_lazy_${period}_${minMessages}` }]]
+                inline_keyboard: [[{ text: "⚠️ Выдать варны неактивным", callback_data: `warn_lazy_${period}_${minMessages}` }]]
             }
         });
 
@@ -385,8 +480,8 @@ async function handleCheckCommand(ctx) {
 
 bot.command('check', handleCheckCommand);
 
-// Кнопка подтверждения кика
-bot.action(/^kick_lazy_(day|week|month|all)_(\d+)$/, async (ctx) => {
+// Кнопка выдачи варнов вместо кика при проверке
+bot.action(/^warn_lazy_(day|week|month|all)_(\d+)$/, async (ctx) => {
     try {
         const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
         if (member.status !== 'administrator' && member.status !== 'creator') {
@@ -398,7 +493,7 @@ bot.action(/^kick_lazy_(day|week|month|all)_(\d+)$/, async (ctx) => {
         const chatId = ctx.chat.id.toString();
         const allUsers = await User.find({});
         
-        let kickedCount = 0;
+        let warnedCount = 0;
 
         for (let u of allUsers) {
             if (u.isResting) continue;
@@ -409,22 +504,20 @@ bot.action(/^kick_lazy_(day|week|month|all)_(\d+)$/, async (ctx) => {
             }
 
             if (userMessages < minMessages) {
-                try {
-                    await ctx.telegram.banChatMember(ctx.chat.id, u.userId);
-                    await ctx.telegram.unbanChatMember(ctx.chat.id, u.userId);
-                    kickedCount++;
-                } catch (err) {
-                    console.log(`Не удалось кикнуть пользователя ${u.userId}:`, err);
-                }
+                if (!u.warnings) u.warnings = {};
+                u.warnings[chatId] = (u.warnings[chatId] || 0) + 1;
+                u.markModified('warnings');
+                await u.save();
+                warnedCount++;
             }
         }
 
-        await ctx.answerCbQuery("Чистка завершена!");
-        await ctx.editMessageText(`✅ Авто-чистка (${period}) завершена! Удалено неактивных участников: ${kickedCount}`);
+        await ctx.answerCbQuery("Выдача предупреждений завершена!");
+        await ctx.editMessageText(`⚠️ Авто-проверка (${period}) завершена! Выдано варнов за неактивность: ${warnedCount}`);
 
     } catch (e) {
         console.error(e);
-        ctx.answerCbQuery({ text: "Произошла ошибка при чистке.", show_alert: true });
+        ctx.answerCbQuery({ text: "Произошла ошибка при выдаче варнов.", show_alert: true });
     }
 });
 
@@ -435,14 +528,14 @@ bot.hears(/^\/checkday(@\w+)?$/, async (ctx) => {
 });
 
 bot.hears(/^\/checkweek(@\w+)?$/, async (ctx) => {
-    ctx.message.text = '/check week 70';
+    ctx.message.text = '/check week 100';
     return handleCheckCommand(ctx);
 });
 
 bot.hears(/^\/checkmonth(@\w+)?$/, async (ctx) => {
-    ctx.message.text = '/check month 150';
+    ctx.message.text = '/check month 300';
     return handleCheckCommand(ctx);
 });
 
 bot.launch();
-console.log("Бот запущен с MongoDB!");
+console.log("Бот запущен с MongoDB и всеми обновлениями!");
