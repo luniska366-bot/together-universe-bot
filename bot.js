@@ -474,12 +474,15 @@ async function handleCheckCommand(ctx) {
             list += `👤 @${item.user.username || 'Без юзернейма'} — ${item.count} сообщ.\n`;
         });
         
-        ctx.reply(list, {
-            parse_mode: "Markdown",
-            reply_markup: {
-                inline_keyboard: [[{ text: "⚠️ Выдать варны неактивным", callback_data: `warn_lazy_${period}_${minMessages}` }]]
-            }
-        });
+            ctx.reply(list, {
+        reply_markup: {
+            inline_keyboard: [[{
+                text: "⚠️ Выдать варны неактивным",
+                callback_data: `warn_lazy_${period}_${minMessages}`
+            }]]
+        }
+    });
+
 
     } catch (e) {
         console.error(e);
