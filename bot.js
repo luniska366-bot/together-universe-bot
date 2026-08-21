@@ -469,7 +469,7 @@ async function handleCheckCommand(ctx) {
             return ctx.reply(`✅ Все активны ${periodNames[period]} или находятся на ресте! Варны не нужны.`);
         }
 
-        let list = `🧹 **Кандидаты на предупреждение (${periodNames[period]}, меньше ${minMessages} сообщ.):**\n*(Те, кто на ресте — защищены)*\n\n`;
+            let list = `🧹 **Кандидаты на предупреждение (${periodNames[period]}, меньше ${minMessages} сообщ.):**\n*(Те, кто на ресте — защищены)*\n\n`;
         lazyUsers.forEach(item => {
             list += `👤 @${item.user.username || 'Без юзернейма'} — ${item.count} сообщ.\n`;
         });
