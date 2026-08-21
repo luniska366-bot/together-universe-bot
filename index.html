@@ -158,7 +158,9 @@
             </div>
             <div>
                 <div id="userName" style="font-weight: bold; font-size: 16px;">Макар</div>
-                <div style="font-size: 13px; opacity: 0.8; margin-top: 2px;">🌟 <span id="userBalance">0</span> <span data-i18n="points">очков</span></div>
+                <div style="font-size: 13px; opacity: 0.8; margin-top: 2px;">
+                    🌟 <span id="userBalance">0</span> <span data-i18n="points">очков</span> | 📈 Лев. <span id="userLevel">1</span>
+                </div>
             </div>
         </div>
     </div>
@@ -253,19 +255,35 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
         
-        // Корректная подгрузка данных пользователя из Телеграма
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            let user = tg.initDataUnsafe.user;
-            let name = user.first_name || "Резидент";
-            if (user.last_name) name += " " + user.last_name;
-            document.getElementById('userName').innerText = name;
-            
-            if (user.photo_url) {
-                document.getElementById('avatarContainer').innerHTML = `<img src="${user.photo_url}" alt="Avatar">`;
-            } else {
-                document.getElementById('avatarLetter').innerText = user.first_name[0].toUpperCase();
+        const API_URL = "https://together-universe-bot.onrender.com";
+
+        // Корректная подгрузка данных пользователя из Телеграма и базы
+        async function initUser() {
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                let user = tg.initDataUnsafe.user;
+                let name = user.first_name || "Резидент";
+                if (user.last_name) name += " " + user.last_name;
+                document.getElementById('userName').innerText = name;
+                
+                if (user.photo_url) {
+                    document.getElementById('avatarContainer').innerHTML = `<img src="${user.photo_url}" alt="Avatar">`;
+                } else {
+                    document.getElementById('avatarLetter').innerText = user.first_name[0].toUpperCase();
+                }
+
+                // Загружаем очки и уровень из MongoDB
+                try {
+                    let resp = await fetch(`${API_URL}/api/user-data?userId=${user.id}`);
+                    let data = await resp.json();
+                    document.getElementById('userBalance').innerText = data.points || 0;
+                    document.getElementById('userLevel').innerText = data.level || 1;
+                } catch(e) {
+                    console.error("Не удалось подгрузить данные профиля", e);
+                }
             }
         }
+
+        initUser();
 
         function switchTab(tabId, btn) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -287,10 +305,7 @@
                 container.innerHTML = '<div class="card">Загрузка хит-парада... 🎶</div>';
                 
                 let chatId = tg.initDataUnsafe?.chat?.id || 'global';
-                let serverUrl = ""; // Пустой адрес, если открыто на том же домене, либо вставь свой URL бэкенда
-                
-                let response = await fetch(`https://together-universe-bot.onrender.com/api/top?type=${type}&chat_id=${chatId}`);
-
+                let response = await fetch(`${API_URL}/api/top?type=${type}&chat_id=${chatId}`);
                 let leaders = await response.json();
                 
                 container.innerHTML = '';
@@ -317,42 +332,8 @@
 
         // Словари языков
         const i18n = {
-            ru: {
-                points: "очков",
-                feedTitle: "📰 Новостная лента",
-                feedDesc: "Интерфейс полностью обновлен в стиле суперзвезды.",
-                shopTitle: "🛍 Магазин кастомизации",
-                shopSoon: "Товары и уникальные роли скоро появятся!",
-                eventsTitle: "⚡ Активные ивенты",
-                eventsSoon: "События и челленджи в разработке.",
-                topsTitle: "🏆 Топы активов",
-                profileTitle: "👤 Профиль и Настройки",
-                passportActive: "Паспорт Юниверса активен.",
-                themeBtn: "Тема",
-                tabFeed: "📰 Главная",
-                tabShop: "🛍 Магазин",
-                tabEvents: "⚡ Ивенты",
-                tabTops: "🏆 Топы",
-                tabProfile: "👤 Профиль"
-            },
-            en: {
-                points: "points",
-                feedTitle: "📰 News Feed",
-                feedDesc: "The interface has been completely redesigned.",
-                shopTitle: "🛍 Customization Shop",
-                shopSoon: "Items and custom roles coming soon!",
-                eventsTitle: "⚡ Active Events",
-                eventsSoon: "Events and challenges are in development.",
-                topsTitle: "🏆 Leaderboards",
-                profileTitle: "👤 Profile & Settings",
-                passportActive: "Universe Passport is active.",
-                themeBtn: "Theme",
-                tabFeed: "📰 Feed",
-                tabShop: "🛍 Shop",
-                tabEvents: "⚡ Events",
-                tabTops: "🏆 Tops",
-                tabProfile: "👤 Profile"
-            },
+            ru: { points: "очков", feedTitle: "📰 Новостная лента", feedDesc: "Интерфейс полностью обновлен в стиле суперзвезды.", shopTitle: "🛍 Магазин кастомизации", shopSoon: "Товары и уникальные роли скоро появятся!", eventsTitle: "⚡ Активные ивенты", eventsSoon: "События и челленджи в разработке.", topsTitle: "🏆 Топы активов", profileTitle: "👤 Профиль и Настройки", passportActive: "Паспорт Юниверса активен.", themeBtn: "Тема", tabFeed: "📰 Главная", tabShop: "🛍 Магазин", tabEvents: "⚡ Ивенты", tabTops: "🏆 Топы", tabProfile: "👤 Профиль" },
+            en: { points: "points", feedTitle: "📰 News Feed", feedDesc: "The interface has been completely redesigned.", shopTitle: "🛍 Customization Shop", shopSoon: "Items and custom roles coming soon!", eventsTitle: "⚡ Active Events", eventsSoon: "Events and challenges are in development.", topsTitle: "🏆 Leaderboards", profileTitle: "👤 Profile & Settings", passportActive: "Universe Passport is active.", themeBtn: "Theme", tabFeed: "📰 Feed", tabShop: "🛍 Shop", tabEvents: "⚡ Events", tabTops: "🏆 Tops", tabProfile: "👤 Profile" },
             az: { points: "xal", feedTitle: "📰 Xəbər lenti", feedDesc: "İnterfeys tamamilə yeniləndi.", shopTitle: "🛍 Fərdiləşdirmə mağazası", shopSoon: "Məhsullar tezliklə!", eventsTitle: "⚡ Aktiv tədbirlər", eventsSoon: "Hadisələr hazırlıq mərhələsindədir.", topsTitle: "🏆 Liderlər lövhəsi", profileTitle: "👤 Profil və Ayarlar", passportActive: "Universe pasportu aktivdir.", themeBtn: "Mövzu", tabFeed: "📰 Əsas", tabShop: "🛍 Mağaza", tabEvents: "⚡ Tədbirlər", tabTops: "🏆 Top", tabProfile: "👤 Profil" },
             hy: { points: "միավոր", feedTitle: "📰 Նորությունների ժապավեն", feedDesc: "Ինտերֆեյսը լիովին թարմացվել է:", shopTitle: "🛍 Անհատականացման խանութ", shopSoon: "Ապրանքները շուտով:", eventsTitle: "⚡ Ակտիվ իրադարձություններ", eventsSoon: "Իրադարձությունները մշակման փուլում են:", topsTitle: "🏆 Առաջատարներ", profileTitle: "👤 Պրոֆիլ և Կարգավորումներ", passportActive: "Universe անձնագիրը ակտիվ է:", themeBtn: "Թեմա", tabFeed: "📰 Գլխավոր", tabShop: "🛍 Խանութ", tabEvents: "⚡ Իրադարձություններ", tabTops: "🏆 Թոփեր", tabProfile: "👤 Պրոֆիլ" },
             be: { points: "ачкоў", feedTitle: "📰 Навінавая стужка", feedDesc: "Інтэрфейс цалкам абноўлены.", shopTitle: "🛍 Магазін кастамізацыі", shopSoon: "Тавары хутка!", eventsTitle: "⚡ Актыўныя івенты", eventsSoon: "Падзеі ў распрацоўцы.", topsTitle: "🏆 Топы актыву", profileTitle: "👤 Профіль і Настройкі", passportActive: "Пш пашпарт актыўны.", themeBtn: "Тэма", tabFeed: "📰 Галоўная", tabShop: "🛍 Магазін", tabEvents: "⚡ Івенты", tabTops: "🏆 Топы", tabProfile: "👤 Профіль" },
