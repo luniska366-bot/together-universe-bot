@@ -488,6 +488,32 @@ app.post('/api/shop/buy', async (req, res) => {
     }
 });
 
+// Получение списка баннеров
+app.get('/api/banners', async (req, res) => {
+    try {
+        const banners = await Banner.find({});
+        res.json(banners);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Добавление баннера
+app.post('/api/banners/add', async (req, res) => {
+    try {
+        const { id, imageUrl, link } = req.body;
+        await Banner.create({ id, imageUrl, link });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Удаление баннера
+app.delete('/api/banners/delete', async (req, res) => {
+    try {
+        const { id } = req.query;
+        await Banner.deleteOne({ id });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 
 app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
     bot.handleUpdate(req.body, res);
