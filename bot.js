@@ -210,7 +210,7 @@ bot.hears(/^кто я$/i, async (ctx) => {
 bot.command('setdesc', async (ctx) => {
     const text = ctx.message.text.replace('/setdesc', '').trim();
     if (!text) {
-        return ctx.reply("Напиши текст после команды, например: `/setdesc Живу музыкой!`", { parse_mode: 'Markdown' });
+        return ctx.reply("Напиши текст после команды, например: `/setdesc Живу музыкой!`",  );
     }
     await User.updateOne({ userId: ctx.from.id }, { description: text });
     await ctx.reply("Твой статус успешно обновлен! ✨");
@@ -247,7 +247,7 @@ bot.command(['topall', 'topday', 'topweek', 'topmonth'], async (ctx) => {
             topText += `${i + 1}. @${item.username || 'Резидент'} — ${item.count} сообщ.\n`;
         });
 
-        ctx.reply(topText || "Пока пусто!", { parse_mode: "Markdown" });
+        ctx.reply(topText || "Пока пусто!", );
     } catch (e) {
         console.error(e);
         ctx.reply("Ошибка при получении топа.");
@@ -422,7 +422,7 @@ bot.command('rest', async (ctx) => {
         await user.save();
 
         if (user.isResting) {
-            return ctx.reply(`🏖️ Пользователь @${targetName} отправлен на **рест (отдых)**. Чистка его не тронет!`, { parse_mode: "Markdown" });
+            return ctx.reply(`🏖️ Пользователь @${targetName} отправлен на **рест (отдых)**. Чистка его не тронет!`, );
         } else {
             return ctx.reply(`⚡ Пользователь @${targetName} вернулся с отдыха и снова участвует в проверках активности.`);
         }
