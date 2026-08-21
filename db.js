@@ -115,5 +115,4 @@ const ChatSchema = new mongoose.Schema({
 });
 const ChatModel = mongoose.model('ChatSettings', ChatSchema);
 
-
-module.exports = { trackMessage, User, ShopItem, News, Event, getCurrentSeasonCurrencySymbol };
+module.exports = { trackMessage, User, ShopItem, News, Event, ChatModel, getCurrentSeasonCurrencySymbol };
