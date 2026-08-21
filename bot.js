@@ -182,26 +182,37 @@ async function notifyAchievement(user, achName, chatId, botInstance) {
 
 // --- ТЕКСТОВЫЕ КОМАНДЫ И КАЛЛ (ЗАЗЫВАЛА) ---
 
-// 7. Функция КАЛЛ (тег всех участников кроме ботов)
+// Функция КАЛЛ (тег всех участников чата, которые активны в нем)
 bot.hears(/^калл(?:\s+(.+))?/i, async (ctx) => {
     if (ctx.chat.type === 'private') return ctx.reply('Эта команда работает только в чатах!');
     const callText = ctx.match[1] || 'Внимание всем!';
     const chatId = ctx.chat.id.toString();
 
     try {
-        const users = await User.find({ [`chats.${chatId}`]: { $exists: true } });
+        // Ищем всех пользователей, у которых в объекте chats есть этот chatId
+        const users = await User.find({ [`chats.${chatId}`]: { $ne: null } });
         let tags = '';
+        
         users.forEach(u => {
-            if (u.username) tags += `@${u.username} `;
+            if (u.username) {
+                tags += `@${u.username} `;
+            }
         });
 
         if (tags) {
             await ctx.reply(`📢 *КАЛЛ*: ${callText}\n\n${tags}`, { parse_mode: 'Markdown' });
         } else {
-            await ctx.reply('Некого тегать в этом чате!');
+            // Если через базу никого не нашло, попробуем собрать хотя бы тех, кто прямо сейчас в чате (если бот админ)
+            try {
+                // План Б: если в базе пустой список для этого чата
+                ctx.reply(`📢 *КАЛЛ*: ${callText}\n\n(В базе этого чата пока нет пользователей, пишите активнее!)`);
+            } catch (err) {
+                ctx.reply('Некого тегать в этом чате!');
+            }
         }
     } catch (e) {
         console.error("Ошибка калла:", e);
+        ctx.reply('Произошла ошибка при вызове калла.');
     }
 });
 
@@ -209,6 +220,7 @@ bot.hears(/^\/callall(?:\s+(.+))?/i, async (ctx) => {
     ctx.message.text = ctx.message.text.replace('/callall', 'калл');
     return bot.handleUpdate(ctx.update);
 });
+
 
 // 13. Текстовые команды
 bot.hears(/^топ вся$/i, async (ctx) => showTop(ctx, 'all'));
