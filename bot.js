@@ -1,601 +1,402 @@
 const { Telegraf, Markup } = require('telegraf');
 const express = require('express');
 const cors = require('cors');
-const { User } = require('./db'); // Твоя готовая база данных
+const { User, ShopItem, News, Event, trackMessage } = require('./db');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- НОВЫЕ ЭНДПОИНТЫ ДЛЯ MINI APP (МАГАЗИН, НОВОСТИ, ИВЕНТЫ, ПРОФИЛЬ) ---
+const bot = new Telegraf("8708472061:AAGsyYm8RhgDlqpyeEiGwYlbnXFZwKdTI2M");
+const MINI_APP_URL = "https://luniska366-bot.github.io/together-universe-bot/";
 
-// Получение профиля и расширенных данных (валюты, достижения, уровень)
+// --- API ДЛЯ MINI APP (МАГАЗИН, НОВОСТИ, ИВЕНТЫ, ПРОФИЛЬ, АДМИНКА) ---
+
 app.get('/api/user-data', async (req, res) => {
     try {
         const user = await User.findOne({ userId: req.query.userId });
-        res.json(user || { points: 0, level: 1, season_currency: 0, achievements: [] });
+        res.json(user || { points: 0, level: 1, season_currency: 0, achievements: [], inventory: [] });
     } catch (e) {
-        res.status(500).json({ error: "Ошибка при получении данных профиля" });
+        res.status(500).json({ error: "Ошибка" });
     }
 });
 
-// Эндпоинт для магазина (покупка товаров/валют)
+// Сохранение/обновление описания через Mini App или бота (+описание)
+app.post('/api/update-description', async (req, res) => {
+    try {
+        const { userId, description } = req.body;
+        if (description.length > 150) return res.status(400).json({ error: "Слишком длинное описание (максимум 150 символов)" });
+        await User.updateOne({ userId }, { description });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
+
+// Смена активной рамки
+app.post('/api/set-frame', async (req, res) => {
+    try {
+        const { userId, frameId } = req.body;
+        await User.updateOne({ userId }, { activeFrame: frameId });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: "Ошибка" });
+    }
+});
+
+// Магазин
 app.get('/api/shop', async (req, res) => {
-    res.json([
-        { id: 1, name: "🌟 Набор Звездного Резидента", cost: 100, type: "points" },
-        { id: 2, name: "💎 Сезонный Бонус", cost: 50, type: "season_currency" }
-    ]);
+    try {
+        const items = await ShopItem.find({});
+        res.json(items);
+    } catch (e) {
+        res.status(500).json({ error: "Ошибка" });
+    }
 });
 
-// Эндпоинт новостей и ивентов
+app.post('/api/shop/add', async (req, res) => {
+    try {
+        const newItem = new ShopItem(req.body);
+        await newItem.save();
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: "Ошибка добавления товара" });
+    }
+});
+
+// Новости
 app.get('/api/news', async (req, res) => {
-    res.json([
-        { id: 1, title: "🚀 Запуск Together Universe", text: "Обновление бота и новые фичи в Mini App уже доступны!" },
-        { id: 2, title: "⭐ Ивент Активности", text: "Копите очки в чатах и получайте сезонную валюту вдвое быстрее!" }
-    ]);
+    try {
+        const news = await News.find({}).sort({ date: -1 });
+        res.json(news);
+    } catch (e) {
+        res.status(500).json({ error: "Ошибка" });
+    }
 });
 
-// ------------------------------------------------------------------------
+app.post('/api/news/add', async (req, res) => {
+    try {
+        const newNews = new News(req.body);
+        await newNews.save();
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: "Ошибка добавления новости" });
+    }
+});
 
-// Эндпоинт, который забирает данные из MongoDB и отдает топы
+// Ивенты
+app.get('/api/events', async (req, res) => {
+    try {
+        const events = await Event.find({});
+        res.json(events);
+    } catch (e) {
+        res.status(500).json({ error: "Ошибка" });
+    }
+});
+
+app.post('/api/events/add', async (req, res) => {
+    try {
+        const newEvent = new Event(req.body);
+        await newEvent.save();
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: "Ошибка добавления ивента" });
+    }
+});
+
+// Топы
 app.get('/api/top', async (req, res) => {
     try {
         const { type = 'all', chat_id } = req.query;
         const allUsers = await User.find({});
-        
         let usersList = [];
         
         allUsers.forEach(u => {
             let count = 0;
-            
-            // Если запрашивают топ конкретного чата
             if (chat_id && chat_id !== 'global' && u.chats && u.chats[chat_id]) {
                 count = u.chats[chat_id][type] || u.chats[chat_id]['all'] || 0;
             } else {
-                // Глобальный топ по всем чатам пользователя
                 if (u.chats) {
                     Object.values(u.chats).forEach(chatData => {
                         count += chatData[type] || chatData['all'] || 0;
                     });
                 }
             }
-            
             if (count > 0) {
-                usersList.push({
-                    username: u.username || 'Резидент',
-                    message_count: count
-                });
+                usersList.push({ username: u.username || 'Резидент', message_count: count });
             }
         });
 
-        // Сортируем по убыванию (от большего к меньшему)
         usersList.sort((a, b) => b.message_count - a.message_count);
-        
-        // Возвращаем топ-10
         res.json(usersList.slice(0, 10));
     } catch (e) {
-        console.error("Ошибка API топов:", e);
         res.status(500).json({ error: "Internal server error" });
     }
 });
 
-const bot = new Telegraf("8708472061:AAGsyYm8RhgDlqpyeEiGwYlbnXFZwKdTI2M");
-const MINI_APP_URL = "https://luniska366-bot.github.io/together-universe-bot/";
+// --- СИСТЕМА ДОСТИЖЕНИЙ С УВЕДОМЛЕНИЯМИ В ЛС И ЧАТ ---
+const ACHIEVEMENTS_DEF = [
+    { id: 'novice', name: 'Новичок Юниверс', count: 1 },
+    { id: 'advanced', name: 'Продвинутый Юниверс', count: 100 },
+    { id: 'cool', name: 'Крутой Юниверс', count: 500 },
+    { id: 'amazing', name: 'Удивительный Юниверс', count: 800 },
+    { id: 'talkative', name: 'Разговорчивый Юниверс', count: 1000 },
+    { id: 'pro', name: 'Про-Юниверс', count: 2000 },
+    { id: 'master', name: 'Мастер Юниверс', count: 5000 },
+    { id: 'veteran', name: 'Ветеран Юниверс', count: 10000 },
+    { id: 'super', name: 'Супер Юниверс', count: 15000 },
+    { id: 'active_uni', name: 'Актив Юниверс', count: 20000 },
+];
 
-// --- ТЕКСТОВЫЕ КОМАНДЫ И КАЛЛ (ЗАЗЫВАЛА) ---
-bot.hears(/^(!калл|калл|зазыв)/i, async (ctx) => {
-    await ctx.reply(`📢 Внимание всем! Кликаем по ссылке ниже, заходим в Mini App, зацениваем магазин и новости! 🚀`,
-        Markup.inlineKeyboard([
-            [Markup.button.webApp('Открыть Mini App', MINI_APP_URL)]
-        ])
-    );
-});
-
-bot.hears(/^(!магазин|магазин)/i, async (ctx) => {
-    await ctx.reply(`🛒 Открой Mini App, чтобы зайти в магазин и купить уникальные награды за сезонную валюту!`,
-        Markup.inlineKeyboard([
-            [Markup.button.webApp('Перейти в магазин', MINI_APP_URL)]
-        ])
-    );
-});
-
-bot.hears(/^(!профиль|профиль)/i, async (ctx) => {
-    const user = await User.findOne({ userId: ctx.from.id });
-    if (!user) return ctx.reply(`Сначала нажми /start!`);
-    await ctx.reply(`👤 Твой профиль:\n💰 Очки: ${user.points || 0}\n⭐ Сезонная валюта: ${user.season_currency || 0}\n🏆 Уровень: ${user.level || 1}`);
-});
-
-// Функция трекинга сообщений в БД (с начислением очков, уровней и сезонной валюты)
-async function trackMessage(userId, username, chatId) {
-    let user = await User.findOne({ userId });
-    if (!user) {
-        user = new User({ userId, username, chats: {}, points: 0, level: 1, season_currency: 0, warnings: {}, verified: true });
+async function checkAchievements(user, chatId, botInstance, totalMessages, messageHour) {
+    for (const ach of ACHIEVEMENTS_DEF) {
+        if (totalMessages >= ach.count && !user.achievements.includes(ach.name)) {
+            user.achievements.push(ach.name);
+            await notifyAchievement(user, ach.name, chatId, botInstance);
+        }
     }
-    
-    chatId = chatId.toString();
-    if (!user.chats) user.chats = {};
-    if (!user.chats[chatId]) {
-        user.chats[chatId] = { all: 0, day: 0, week: 0, month: 0 };
-    }
-    
-    user.chats[chatId].all += 1;
-    user.chats[chatId].day = (user.chats[chatId].day || 0) + 1;
-    user.chats[chatId].week = (user.chats[chatId].week || 0) + 1;
-    user.chats[chatId].month = (user.chats[chatId].month || 0) + 1;
-    
-    // Начисление очков (1 сообщение = 10 очков), сезонной валюты и расчет уровня
-    user.points = (user.points || 0) + 10;
-    user.season_currency = (user.season_currency || 0) + 1;
-    user.level = Math.floor(user.points / 500) + 1;
 
-    user.username = username || user.username;
-    
-    user.markModified('chats');
-    await user.save();
+    // Бессонница (00:00 - 6:00) и Утро (6:01 - 10:00)
+    if (messageHour >= 0 && messageHour < 6 && !user.achievements.includes('Бессонница')) {
+        user.achievements.push('Бессонница');
+        await notifyAchievement(user, 'Бессонница', chatId, botInstance);
+    }
+    if (messageHour >= 6 && messageHour <= 10 && !user.achievements.includes('Утро')) {
+        user.achievements.push('Утро');
+        await notifyAchievement(user, 'Утро', chatId, botInstance);
+    }
 }
 
-// --- 1. КАПЧА ДЛЯ НОВЫХ УЧАСТНИКОВ ---
+async function notifyAchievement(user, achName, chatId, botInstance) {
+    await user.save();
+    const text = `🏆 Вы получили достижение: *${achName}*!`;
+    try {
+        await botInstance.telegram.sendMessage(user.userId, text, { parse_mode: 'Markdown' });
+    } catch (e) {}
+    if (chatId) {
+        try {
+            await botInstance.telegram.sendMessage(chatId, `🎉 Пользователь @${user.username || 'резидент'} разблокировал достижение: *${achName}*!`, { parse_mode: 'Markdown' });
+        } catch (e) {}
+    }
+}
+
+// --- ТЕКСТОВЫЕ КОМАНДЫ И КАЛЛ (ЗАЗЫВАЛА) ---
+
+// 7. Функция КАЛЛ (тег всех участников кроме ботов)
+bot.hears(/^калл(?:\s+(.+))?/i, async (ctx) => {
+    if (ctx.chat.type === 'private') return ctx.reply('Эта команда работает только в чатах!');
+    const callText = ctx.match[1] || 'Внимание всем!';
+    const chatId = ctx.chat.id.toString();
+
+    try {
+        const users = await User.find({ [`chats.${chatId}`]: { $exists: true } });
+        let tags = '';
+        users.forEach(u => {
+            if (u.username) tags += `@${u.username} `;
+        });
+
+        if (tags) {
+            await ctx.reply(`📢 *КАЛЛ*: ${callText}\n\n${tags}`, { parse_mode: 'Markdown' });
+        } else {
+            await ctx.reply('Некого тегать в этом чате!');
+        }
+    } catch (e) {
+        console.error("Ошибка калла:", e);
+    }
+});
+
+bot.hears(/^\/callall(?:\s+(.+))?/i, async (ctx) => {
+    ctx.message.text = ctx.message.text.replace('/callall', 'калл');
+    return bot.handleUpdate(ctx.update);
+});
+
+// 13. Текстовые команды
+bot.hears(/^топ вся$/i, async (ctx) => showTop(ctx, 'all'));
+bot.hears(/^топ дня$/i, async (ctx) => showTop(ctx, 'day'));
+bot.hears(/^топ недели$/i, async (ctx) => showTop(ctx, 'week'));
+
+async function showTop(ctx, type) {
+    if (ctx.chat.type === 'private') return;
+    const chatId = ctx.chat.id.toString();
+    const allUsers = await User.find({});
+    let list = [];
+    allUsers.forEach(u => {
+        if (u.chats && u.chats[chatId]) {
+            list.push({ username: u.username, count: u.chats[chatId][type] || 0 });
+        }
+    });
+    list.sort((a, b) => b.count - a.count);
+    let text = `🏆 *Топ (${type})*:\n\n`;
+    list.slice(0, 10).forEach((item, i) => {
+        text += `${i + 1}. @${item.username || 'Резидент'} — ${item.count} сообщ.\n`;
+    });
+    ctx.reply(text, { parse_mode: 'Markdown' });
+}
+
+// Варн и бан текстовые команды
+bot.hears(/^пред$/i, async (ctx) => {
+    if (!ctx.message.reply_to_message) return ctx.reply('Ответьте на сообщение командой "пред"');
+    handleWarn(ctx);
+});
+bot.hears(/^бан$/i, async (ctx) => {
+    if (!ctx.message.reply_to_message) return ctx.reply('Ответьте на сообщение командой "бан"');
+    try {
+        await ctx.telegram.banChatMember(ctx.chat.id, ctx.message.reply_to_message.from.id);
+        ctx.reply('🔨 Пользователь забанен.');
+    } catch(e) {
+        ctx.reply('Не удалось забанить.');
+    }
+});
+
+// 1, 6. Чек нормы (месяц = 300, неделя = 100, день = 10) -> выдача ВАРНОВ вместо киков
+bot.hears(/^чек месяц$/i, async (ctx) => runCheck(ctx, 'month', 300));
+bot.hears(/^чек неделя$/i, async (ctx) => runCheck(ctx, 'week', 100));
+bot.hears(/^чек дня$/i, async (ctx) => runCheck(ctx, 'day', 10));
+bot.hears(/^чек$/i, async (ctx) => runCheck(ctx, 'month', 300));
+
+async function runCheck(ctx, period, norm) {
+    if (ctx.chat.type === 'private') return;
+    const chatId = ctx.chat.id.toString();
+    const users = await User.find({});
+    let countPunished = 0;
+
+    for (let u of users) {
+        if (u.isResting) continue;
+        const msgs = (u.chats && u.chats[chatId]) ? (u.chats[chatId][period] || 0) : 0;
+        if (msgs < norm) {
+            if (!u.warnings) u.warnings = {};
+            u.warnings[chatId] = (u.warnings[chatId] || 0) + 1;
+            u.markModified('warnings');
+            await u.save();
+            countPunished++;
+        }
+    }
+    ctx.reply(`🧹 Чистка завершена! Норма: ${norm} (${period}). Получили предупреждение (варн): ${countPunished} чел.`);
+}
+
+// 14. Установка описания (+описание) и расширенная команда "кто я"
+bot.hears(/^\+описание\s+(.+)/i, async (ctx) => {
+    const userId = String(ctx.from.id);
+    const text = ctx.match[1].trim();
+    if (text.length > 150) return ctx.reply('❌ Описание не должно превышать 150 символов.');
+    await User.updateOne({ userId }, { description: text });
+    ctx.reply('✅ Описание профиля успешно обновлено!');
+});
+
+bot.hears(/^кто я$/i, async (ctx) => {
+    const userId = String(ctx.from.id);
+    const chatId = ctx.chat.id.toString();
+    const user = await User.findOne({ userId });
+
+    if (!user) return ctx.reply('Сначала напишите что-нибудь в чат!');
+    const stats = user.chats && user.chats[chatId] ? user.chats[chatId] : { all: 0 };
+
+    let text = `🪪 *Паспорт Юниверса*\n\n` +
+        `👤 Резидент: @${user.username || ctx.from.first_name}\n` +
+        `💬 Статус: ${user.description || 'Не указан (+описание [текст])'}\n` +
+        `🏷 Титул: ${user.activeTitle || 'Нет'}\n` +
+        `🖼 Рамка: ${user.activeFrame || 'Нет'}\n` +
+        `🌟 Очки: ${user.points || 0} (Левел ${user.level || 1})\n` +
+        `⭐ Сезонная валюта: ${user.season_currency || 0}\n` +
+        `🏆 Достижения: ${user.achievements.length ? user.achievements.join(', ') : 'Пока нет'}\n` +
+        `📊 Сообщений в чате: ${stats.all}`;
+
+    ctx.reply(text, { parse_mode: 'Markdown' });
+});
+
+// --- 12. КАПЧА ДЛЯ НОВЫХ УЧАСТНИКОВ И ЗАЯВОК ---
+bot.on('chat_join_request', async (ctx) => {
+    try {
+        await ctx.approveChatJoinRequest();
+        const userId = ctx.from.id;
+        await ctx.telegram.sendMessage(userId, `👋 Добро пожаловать! Чтобы получить доступ к чату, подпишитесь на наш ТГК и напишите /start сюда!`);
+    } catch (e) {}
+});
+
 bot.on('chat_member', async (ctx) => {
     const newMember = ctx.chatMember.new_chat_member;
     const oldMember = ctx.chatMember.old_chat_member;
 
     if (oldMember.status === 'left' && (newMember.status === 'member' || newMember.status === 'restricted')) {
         const userId = newMember.user.id;
-        const userName = newMember.user.first_name || 'друг';
-
         let user = await User.findOne({ userId });
         if (!user) {
-            user = new User({ userId, username: userName, verified: false, chats: {}, warnings: {} });
-            await user.save();
+            await new User({ userId, username: newMember.user.username, verified: false }).save();
         } else {
-            user.verified = false;
-            await user.save();
+            await User.updateOne({ userId }, { verified: false });
         }
 
         try {
-            await ctx.telegram.restrictChatMember(ctx.chat.id, userId, {
-                permissions: { can_send_messages: false }
-            });
-        } catch (err) {
-            console.log("Не удалось ограничить права для капчи:", err);
-        }
+            await ctx.telegram.restrictChatMember(ctx.chat.id, userId, { permissions: { can_send_messages: false } });
+        } catch (e) {}
 
-        await ctx.reply(
-            `Привет, ${userName}! 💖 Добро пожаловать. Нажми на кнопку ниже в течение 3 минут, чтобы доказать, что ты не бот!`,
-            {
-                reply_markup: {
-                    inline_keyboard: [[{ text: "🐈 Я человек (Пройти капчу)", callback_data: `verify_${userId}` }]]
-                }
-            }
-        );
+        ctx.reply(`Привет, ${newMember.user.first_name}! 💖 Нажми кнопку ниже, чтобы пройти капчу и писать в чат!`, {
+            reply_markup: { inline_keyboard: [[{ text: "🐈 Я человек (Пройти капчу)", callback_data: `verify_${userId}` }]] }
+        });
     }
 });
 
 bot.action(/^verify_(\d+)$/, async (ctx) => {
-    const targetUserId = parseInt(ctx.match[1]);
-    const userId = ctx.from.id;
-
-    if (userId !== targetUserId) {
-        return ctx.answerCbQuery("Эта кнопка не для тебя, солнышко! ✨", { show_alert: true });
-    }
+    const targetId = parseInt(ctx.match[1]);
+    if (ctx.from.id !== targetId) return ctx.answerCbQuery("Эта кнопка не для тебя! ✨", { show_alert: true });
 
     try {
-        await ctx.telegram.restrictChatMember(ctx.chat.id, userId, {
-            permissions: {
-                can_send_messages: true,
-                can_send_media_messages: true,
-                can_send_other_messages: true,
-                can_add_web_page_previews: true
-            }
+        await ctx.telegram.restrictChatMember(ctx.chat.id, targetId, {
+            permissions: { can_send_messages: true, can_send_media_messages: true, can_send_other_messages: true }
         });
-    } catch (err) {
-        console.log("Не удалось вернуть права:", err);
-    }
+    } catch (e) {}
 
-    await User.updateOne({ userId }, { verified: true });
-    await ctx.answerCbQuery("Успешно! Добро пожаловать!");
+    await User.updateOne({ userId: targetId }, { verified: true });
+    await ctx.answerCbQuery("Успешно!");
     await ctx.editMessageText(`Успешно! ${ctx.from.first_name} прошел проверку и готов общаться! 🌟`);
 });
 
-// Команда /start
 bot.start(async (ctx) => {
-    const userId = ctx.from.id;
-    const username = ctx.from.username || ctx.from.first_name;
-    const isGroup = ctx.chat.type !== 'private';
-
-    if (!isGroup) {
-        let user = await User.findOne({ userId });
+    if (ctx.chat.type === 'private') {
+        let user = await User.findOne({ userId: String(ctx.from.id) });
         if (!user) {
-            await new User({ userId, username, chats: {}, warnings: {}, verified: true }).save();
+            await new User({ userId: String(ctx.from.id), username: ctx.from.username, verified: true }).save();
+        } else {
+            await User.updateOne({ userId: String(ctx.from.id) }, { verified: true });
         }
-        return ctx.reply(
-            `Привет, ${ctx.from.first_name}! 🌌\n\nТвой паспорт Юниверса готов.`,
-            {
-                reply_markup: {
-                    inline_keyboard: [[{ text: "✨ Открыть Hub", web_app: { url: MINI_APP_URL } }]]
-                }
-            }
-        );
-    } else {
-        return ctx.reply("🌌 Бот Together Universe активирован в этом чате! Начинаем копить очки и сезонную валюту.");
-    }
-});
-
-// Команда "кто я"
-bot.hears(/^кто я$/i, async (ctx) => {
-    const userId = ctx.from.id;
-    const chatId = ctx.chat.id.toString();
-    const user = await User.findOne({ userId });
-
-    if (!user || !user.chats || !user.chats[chatId]) {
-        return ctx.reply(`🪪 У тебя еще нет статистики в этом чате.`);
-    }
-
-    const stats = user.chats[chatId];
-    const titleText = user.activeTitle ? `\n🏷 Титул: ${user.activeTitle}` : '';
-    const frameText = user.activeFrame ? `\n🖼 Рамка: ${user.activeFrame}` : '';
-    const descText = user.description ? `\n💬 Статус: ${user.description}` : '';
-
-    ctx.reply(
-        `🪪 **Паспорт Юниверса**\n\n` +
-        `👤 Резидент: @${user.username || ctx.from.first_name}` +
-        titleText + frameText + descText + `\n` +
-        `🌟 Очки: ${user.points || 0} (Левел ${user.level || 1})\n` +
-        `⭐ Сезонная валюта: ${user.season_currency || 0}\n` +
-        `💬 Сообщений (всего): ${stats.all}`,
-        { parse_mode: "Markdown" }
-    );
-});
-
-// Команда установки статуса
-bot.command('setdesc', async (ctx) => {
-    const text = ctx.message.text.replace('/setdesc', '').trim();
-    if (!text) {
-        return ctx.reply("Напиши текст после команды, например: `/setdesc Живу музыкой!`");
-    }
-    await User.updateOne({ userId: ctx.from.id }, { description: text });
-    await ctx.reply("Твой статус успешно обновлен! ✨");
-});
-
-// Команды топов
-bot.command(['topall', 'topday', 'topweek', 'topmonth'], async (ctx) => {
-    try {
-        const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
-        if (member.status !== 'administrator' && member.status !== 'creator') {
-            return ctx.reply("⛔ Только для админов!");
-        }
-
-        let fullCommand = ctx.message.text.substring(1).toLowerCase();
-        let cleanCommand = fullCommand.split('@')[0];
-        let period = cleanCommand.replace('top', '');
-        
-        const chatId = ctx.chat.id.toString();
-        const allUsers = await User.find({});
-        
-        let usersList = [];
-        allUsers.forEach(u => {
-            if (u.chats && u.chats[chatId]) {
-                usersList.push({
-                    username: u.username,
-                    count: u.chats[chatId][period] || 0
-                });
-            }
+        return ctx.reply(`Привет, ${ctx.from.first_name}! 🌌 Твой паспорт Юниверса активирован.`, {
+            reply_markup: { inline_keyboard: [[{ text: "✨ Открыть Hub", web_app: { url: MINI_APP_URL } }]] }
         });
-
-        usersList.sort((a, b) => b.count - a.count);
-        let topText = `📊 **Топ (${period})**:\n\n`;
-        usersList.slice(0, 10).forEach((item, i) => {
-            topText += `${i + 1}. @${item.username || 'Резидент'} — ${item.count} сообщ.\n`;
-        });
-
-        ctx.reply(topText || "Пока пусто!");
-    } catch (e) {
-        console.error(e);
-        ctx.reply("Ошибка при получении топа.");
     }
 });
 
-// Трекинг сообщений
+// Трекинг сообщений и капча-контроль
 bot.on('text', async (ctx, next) => {
     if (ctx.message.text.startsWith('/')) return next();
-    
+
     if (ctx.chat.type !== 'private') {
-        const userId = ctx.from.id;
+        const userId = String(ctx.from.id);
         const user = await User.findOne({ userId });
         if (user && user.verified === false) {
-            try {
-                await ctx.deleteMessage();
-            } catch (e) {}
+            try { await ctx.deleteMessage(); } catch (e) {}
             return;
         }
 
         const username = ctx.from.username || ctx.from.first_name;
-        const chatId = ctx.chat.id;
+        const chatId = String(ctx.chat.id);
+        
         await trackMessage(userId, username, chatId);
+        const updatedUser = await User.findOne({ userId });
+        const totalAll = updatedUser.chats[chatId].all;
+        const hour = new Date().getHours();
+        
+        await checkAchievements(updatedUser, chatId, bot, totalAll, hour);
     }
     return next();
-});
-
-// Система предов (/warn, /unwarn, /warns)
-bot.command('warn', async (ctx) => {
-    try {
-        const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
-        if (member.status !== 'administrator' && member.status !== 'creator') {
-            return ctx.reply("⛔ Эта команда только для администраторов!");
-        }
-
-        if (!ctx.message.reply_to_message) {
-            return ctx.reply("⚠️ Ответь этой командой на сообщение нарушителя, чтобы выдать пред!");
-        }
-
-        const targetUser = ctx.message.reply_to_message.from;
-        const targetId = targetUser.id;
-        const targetUsername = targetUser.username || targetUser.first_name;
-        const chatId = ctx.chat.id.toString();
-
-        let user = await User.findOne({ userId: targetId });
-        if (!user) {
-            user = new User({ userId: targetId, username: targetUsername, chats: {}, warnings: {} });
-        }
-
-        if (!user.warnings) user.warnings = {};
-        if (!user.warnings[chatId]) user.warnings[chatId] = 0;
-
-        user.warnings[chatId] += 1;
-        let currentWarns = user.warnings[chatId];
-
-        user.markModified('warnings');
-        await user.save();
-
-        ctx.reply(`⚠️ Администратор выдал предупреждение пользователю @${targetUsername}.\n📌 Предов в этом чате: ${currentWarns}/3`);
-
-        if (currentWarns >= 3) {
-            try {
-                await ctx.telegram.restrictChatMember(ctx.chat.id, targetId, {
-                    until_date: Math.floor(Date.now() / 1000) + 3600,
-                    permissions: { can_send_messages: false }
-                });
-                ctx.reply(`🚫 У @${targetUsername} накопилось 3 предупреждения, выдан мут на 1 час!`);
-            } catch (e) {
-                console.log("Не удалось замутить:", e);
-            }
-        }
-    } catch (e) {
-        console.error(e);
-        ctx.reply("Ошибка при выдаче предупреждения.");
-    }
-});
-
-bot.command('unwarn', async (ctx) => {
-    try {
-        const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
-        if (member.status !== 'administrator' && member.status !== 'creator') {
-            return ctx.reply("⛔ Эта команда только для администраторов!");
-        }
-
-        if (!ctx.message.reply_to_message) {
-            return ctx.reply("⚠️ Ответь на сообщение пользователя, чтобы снять пред.");
-        }
-
-        const targetId = ctx.message.reply_to_message.from.id;
-        const chatId = ctx.chat.id.toString();
-
-        let user = await User.findOne({ userId: targetId });
-        if (user && user.warnings && user.warnings[chatId] > 0) {
-            user.warnings[chatId] -= 1;
-            user.markModified('warnings');
-            await user.save();
-            return ctx.reply(`✅ Снят один пред. Текущее количество: ${user.warnings[chatId]}`);
-        } else {
-            return ctx.reply("У пользователя и так нет предупреждений в этом чате.");
-        }
-    } catch (e) {
-        console.error(e);
-        ctx.reply("Ошибка при снятии преда.");
-    }
-});
-
-bot.command('warns', async (ctx) => {
-    const userId = ctx.from.id;
-    const chatId = ctx.chat.id.toString();
-
-    let user = await User.findOne({ userId });
-    let warns = (user && user.warnings && user.warnings[chatId]) ? user.warnings[chatId] : 0;
-
-    ctx.reply(`📌 Ваши предупреждения в этом чате: ${warns} из 3.`);
-});
-
-// Система чистки сообщений (/clear)
-bot.command(['clear', 'clean'], async (ctx) => {
-    try {
-        const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
-        if (member.status !== 'administrator' && member.status !== 'creator') {
-            return ctx.reply("⛔ Чистить чат могут только администраторы!");
-        }
-
-        if (!ctx.message.reply_to_message) {
-            return ctx.reply("⚠️ Чтобы очистить сообщения, ответь командой `/clear` на сообщение, начиная с которого нужно всё удалить.", { parse_mode: "Markdown" });
-        }
-
-        const replyId = ctx.message.reply_to_message.message_id;
-        const currentId = ctx.message.message_id;
-
-        await ctx.deleteMessage(currentId).catch(() => {});
-        
-        for (let msgId = currentId - 1; msgId >= replyId; msgId--) {
-            try {
-                await ctx.telegram.deleteMessage(ctx.chat.id, msgId);
-            } catch (err) {}
-        }
-
-        const notify = await ctx.reply("🧹 Чат успешно очищен!");
-        setTimeout(() => {
-            ctx.telegram.deleteMessage(ctx.chat.id, notify.message_id).catch(() => {});
-        }, 3000);
-
-    } catch (e) {
-        console.error(e);
-        ctx.reply("❌ Не удалось очистить чат.");
-    }
-});
-
-// Статус отдыха (/rest)
-bot.command('rest', async (ctx) => {
-    try {
-        const userId = ctx.from.id;
-        const member = await ctx.telegram.getChatMember(ctx.chat.id, userId);
-        
-        let targetId = userId;
-        let targetName = ctx.from.first_name;
-
-        if (ctx.message.reply_to_message && (member.status === 'administrator' || member.status === 'creator')) {
-            targetId = ctx.message.reply_to_message.from.id;
-            targetName = ctx.message.reply_to_message.from.username || ctx.message.reply_to_message.from.first_name;
-        }
-
-        let user = await User.findOne({ userId: targetId });
-        if (!user) {
-            user = new User({ userId: targetId, username: targetName, chats: {}, isResting: true });
-        } else {
-            user.isResting = !user.isResting;
-        }
-
-        await user.save();
-
-        if (user.isResting) {
-            return ctx.reply(`🏖️ Пользователь @${targetName} отправлен на **рест (отдых)**. Чистка его не тронет!`);
-        } else {
-            return ctx.reply(`⚡ Пользователь @${targetName} вернулся с отдыха и снова участвует в проверках активности.`);
-        }
-    } catch (e) {
-        console.error(e);
-        ctx.reply("Ошибка при изменении статуса реста.");
-    }
-});
-
-// Проверка активности
-async function handleCheckCommand(ctx) {
-    try {
-        const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
-        if (member.status !== 'administrator' && member.status !== 'creator') {
-            return ctx.reply("⛔ Проверку активности могут запускать только администраторы!");
-        }
-
-        const args = ctx.message.text.split(' ');
-        const period = args[1] && ['day', 'week', 'month', 'all'].includes(args[1]) ? args[1] : 'month';
-        
-        const defaultNorms = { day: 10, week: 100, month: 300, all: 300 };
-        const minMessages = parseInt(args[2]) || defaultNorms[period];
-        
-        const chatId = ctx.chat.id.toString();
-        const allUsers = await User.find({});
-        let lazyUsers = [];
-
-        const periodNames = { day: 'за день', week: 'за неделю', month: 'за месяц', all: 'за всё время' };
-
-        allUsers.forEach(u => {
-            if (u.isResting) return;
-
-            if (u.chats && u.chats[chatId]) {
-                const userMessages = u.chats[chatId][period] || 0;
-                if (userMessages < minMessages) {
-                    lazyUsers.push({ user: u, count: userMessages });
-                }
-            } else {
-                lazyUsers.push({ user: u, count: 0 });
-            }
-        });
-
-        if (lazyUsers.length === 0) {
-            return ctx.reply(`✅ Все активны ${periodNames[period]} или находятся на ресте! Варны не нужны.`);
-        }
-
-        let list = `🧹 **Кандидаты на предупреждение (${periodNames[period]}, меньше ${minMessages} сообщ.):**\n*(Те, кто на ресте — защищены)*\n\n`;
-        lazyUsers.forEach(item => {
-            list += `👤 @${item.user.username || 'Без юзернейма'} — ${item.count} сообщ.\n`;
-        });
-        
-        ctx.reply(list, {
-            reply_markup: {
-                inline_keyboard: [[{
-                    text: "⚠️ Выдать варны неактивным",
-                    callback_data: `warn_lazy_${period}_${minMessages}`
-                }]]
-            }
-        });
-    } catch (e) {
-        console.error(e);
-        ctx.reply("Ошибка при запуске проверки.");
-    }
-}
-
-bot.command('check', handleCheckCommand);
-
-bot.action(/^warn_lazy_(day|week|month|all)_(\d+)$/, async (ctx) => {
-    try {
-        const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
-        if (member.status !== 'administrator' && member.status !== 'creator') {
-            return ctx.answerCbQuery({ text: "⛔ Только для администраторов!", show_alert: true });
-        }
-
-        const period = ctx.match[1];
-        const minMessages = parseInt(ctx.match[2]);
-        const chatId = ctx.chat.id.toString();
-        const allUsers = await User.find({});
-        
-        let warnedCount = 0;
-
-        for (let u of allUsers) {
-            if (u.isResting) continue;
-
-            let userMessages = 0;
-            if (u.chats && u.chats[chatId]) {
-                userMessages = u.chats[chatId][period] || 0;
-            }
-
-            if (userMessages < minMessages) {
-                if (!u.warnings) u.warnings = {};
-                u.warnings[chatId] = (u.warnings[chatId] || 0) + 1;
-                u.markModified('warnings');
-                await u.save();
-                warnedCount++;
-            }
-        }
-
-        await ctx.answerCbQuery("Выдача предупреждений завершена!");
-        await ctx.editMessageText(`⚠️ Авто-проверка (${period}) завершена! Выдано варнов за неактивность: ${warnedCount}`);
-
-    } catch (e) {
-        console.error(e);
-        ctx.answerCbQuery({ text: "Произошла ошибка при выдаче варнов.", show_alert: true });
-    }
-});
-
-bot.hears(/^\/checkday(@\w+)?$/, async (ctx) => {
-    ctx.message.text = '/check day 10';
-    return handleCheckCommand(ctx);
-});
-
-bot.hears(/^\/checkweek(@\w+)?$/, async (ctx) => {
-    ctx.message.text = '/check week 100';
-    return handleCheckCommand(ctx);
-});
-
-bot.hears(/^\/checkmonth(@\w+)?$/, async (ctx) => {
-    ctx.message.text = '/check month 300';
-    return handleCheckCommand(ctx);
 });
 
 app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
     bot.handleUpdate(req.body, res);
 });
 
-SERVER_PORT = process.env.PORT || 10000; 
-app.listen(SERVER_PORT, '0.0.0.0', async () => {
-    console.log(`Сервер запущен на порту ${SERVER_PORT}!`);
-    const webhookUrl = `https://together-universe-bot.onrender.com/bot${process.env.BOT_TOKEN}`;
-    await bot.telegram.setWebhook(webhookUrl);
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, '0.0.0.0', async () => {
+    console.log(`Сервер запущен на порту ${PORT}!`);
+    await bot.telegram.setWebhook(`https://together-universe-bot.onrender.com/bot${process.env.BOT_TOKEN}`);
     console.log("Webhook установлен!");
 });
-
-console.log("Бот запущен с MongoDB и всеми обновлениями!");
