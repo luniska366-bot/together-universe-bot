@@ -182,19 +182,17 @@ async function notifyAchievement(user, achName, chatId, botInstance) {
 
 // --- ТЕКСТОВЫЕ КОМАНДЫ И КАЛЛ (ЗАЗЫВАЛА) ---
 
-// Исправленная функция КАЛЛ
+// Отладочная функция КАЛЛ
 bot.hears(/^калл(?:\s+(.+))?/i, async (ctx) => {
     if (ctx.chat.type === 'private') return ctx.reply('Эта команда работает только в чатах!');
     const callText = ctx.match[1] || 'Внимание всем!';
     const chatId = ctx.chat.id.toString();
 
     try {
-        // Берем вообще всех юзеров из базы, чтобы избежать ошибок запроса
         const allUsers = await User.find({});
         let tags = '';
         
         allUsers.forEach(u => {
-            // Проверяем, есть ли запись по этому чату у пользователя
             if (u.chats && u.chats[chatId] && u.username) {
                 tags += `@${u.username} `;
             }
@@ -206,8 +204,9 @@ bot.hears(/^калл(?:\s+(.+))?/i, async (ctx) => {
             await ctx.reply('В этом чате пока никто не написал ни одного сообщения, некого тегать!');
         }
     } catch (e) {
-        console.error("Ошибка калла:", e);
-        ctx.reply('Произошла ошибка при вызове калла.');
+        // Выводим реальную ошибку в консоль Render, чтобы понять причину
+        console.error("ТОЧНАЯ ОШИБКА КАЛЛА:", e);
+        await ctx.reply(`Ошибка калла: ${e.message}`);
     }
 });
 
