@@ -441,6 +441,53 @@ app.delete('/api/news/delete', async (req, res) => {
     }
 });
 
+// Удаление товара из магазина (для админа)
+app.delete('/api/shop/delete', async (req, res) => {
+    try {
+        const { itemId } = req.query;
+        await ShopItem.deleteOne({ itemId });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Покупка товара с проверкой баланса и добавлением в инвентарь
+app.post('/api/shop/buy', async (req, res) => {
+    try {
+        const { userId, itemId } = req.body;
+        const user = await User.findOne({ userId });
+        const item = await ShopItem.findOne({ itemId });
+
+        if (!user || !item) return res.status(404).json({ error: "Пользователь или товар не найден" });
+        if (user.inventory && user.inventory.includes(itemId)) {
+            return res.status(400).json({ error: "У тебя уже есть этот предмет!" });
+        }
+
+        // Проверяем баланс (кроме бесплатных)
+        if (item.currency === 'stars' && item.price > 0) {
+            if ((user.points || 0) < item.price) return res.status(400).json({ error: "Недостаточно звезд 🌟!" });
+            user.points -= item.price;
+        } else if (item.currency === 'season' && item.price > 0) {
+            if ((user.season_currency || 0) < item.price) return res.status(400).json({ error: "Недостаточно сезонной валюты!" });
+            user.season_currency -= item.price;
+        }
+
+        if (!user.inventory) user.inventory = [];
+        user.inventory.push(itemId);
+
+        // Если это титул или рамка, можно сразу надевать или сохранять
+        if (item.type === 'title') user.activeTitle = item.name;
+        if (item.type === 'frame') user.activeFrame = item.image || item.name;
+
+        user.markModified('inventory');
+        await user.save();
+        res.json({ success: true, newBalance: user.points, newSeason: user.season_currency });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 
 app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
     bot.handleUpdate(req.body, res);
