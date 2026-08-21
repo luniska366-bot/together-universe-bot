@@ -45,10 +45,11 @@
         }
         .avatar img { width: 100%; height: 100%; object-fit: cover; }
         
-        /* WB-слайдер */
-        .slider-container { width: 100%; height: 160px; overflow: hidden; border-radius: 16px; margin-bottom: 15px; position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .slider-wrapper { display: flex; transition: transform 0.5s ease-in-out; height: 100%; }
-        .banner-slide { min-width: 100%; height: 100%; background-size: cover; background-position: center; border-radius: 16px; }
+        .banner {
+            background: var(--accent-gradient); color: white; padding: 15px;
+            border-radius: 14px; margin-bottom: 15px; text-align: center;
+            font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
 
         button, select, input {
             background: var(--card-bg); color: var(--text-color);
@@ -84,86 +85,77 @@
             <div>
                 <div id="userName" style="font-weight: bold; font-size: 16px;">Макар</div>
                 <div style="font-size: 13px; opacity: 0.8; margin-top: 2px;">
-                    🌟 <span id="userBalance">0</span> | 🥥 <span id="userSeasonCurrency">0</span> | 📈 Лев. <span id="userLevel">1</span>
+                    🌟 <span id="userBalance">0</span> | 🥥 <span id="userSeasonCurrency">0</span> | 📈 <span id="levelText">Лев.</span> <span id="userLevel">1</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- WB-слайдер баннеров -->
-    <div class="slider-container">
-        <div class="slider-wrapper" id="bannerWrapper">
-            <div class="banner-slide" style="background: var(--accent-gradient); display:flex; align-items:center; justify-content:center; color:white; font-weight:bold;">Загрузка баннеров... 🚀</div>
-        </div>
+    <!-- Динамический баннер с поддержкой бэкенда -->
+    <div class="banner" id="bannerContainer">
+        🔥 Хит сезона: Уникальные рамки и титулы уже в магазине! Залетай и забирай! 🚀
     </div>
 
     <!-- Главная (Новости) -->
     <div id="feed" class="section active">
-        <h3 style="margin-top: 0;">📰 Новостная лента</h3>
-        <div id="newsContainer"><div class="card">Загрузка новостей... 🚀</div></div>
+        <h3 id="hNews" style="margin-top: 0;">📰 Новостная лента</h3>
+        <div id="newsContainer"><div class="card" id="loadingNews">Загрузка новостей... 🚀</div></div>
     </div>
 
     <!-- Магазин -->
     <div id="shop" class="section">
-        <h3 style="margin-top: 0;">🛍 Магазин кастомизации</h3>
-        <div id="shopContainer"><div class="card">Загрузка товаров... ✨</div></div>
+        <h3 id="hShop" style="margin-top: 0;">🛍 Магазин кастомизации</h3>
+        <div id="shopContainer"><div class="card" id="loadingShop">Загрузка товаров... ✨</div></div>
     </div>
 
     <!-- Ивенты -->
     <div id="events" class="section">
-        <h3 style="margin-top: 0;">⚡ Активные ивенты</h3>
-        <div id="eventsContainer"><div class="card">Загрузка ивентов... ⚡</div></div>
+        <h3 id="hEvents" style="margin-top: 0;">⚡ Активные ивенты</h3>
+        <div id="eventsContainer"><div class="card" id="loadingEvents">Загрузка ивентов... ⚡</div></div>
     </div>
 
     <!-- Топы -->
     <div id="tops" class="section">
-        <h3 style="margin-top: 0;">🏆 Топы активов</h3>
+        <h3 id="hTops" style="margin-top: 0;">🏆 Топы активов</h3>
         <div style="display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto;">
-            <button onclick="loadLeaderboard('day')">☀️ День</button>
-            <button onclick="loadLeaderboard('week')">⚡ Неделя</button>
-            <button onclick="loadLeaderboard('month')">🌙 Месяц</button>
-            <button onclick="loadLeaderboard('all')" class="active">🌍 Всё</button>
+            <button onclick="loadLeaderboard('day')" id="btnDay">☀️ День</button>
+            <button onclick="loadLeaderboard('week')" id="btnWeek">⚡ Неделя</button>
+            <button onclick="loadLeaderboard('month')" id="btnMonth">🌙 Месяц</button>
+            <button onclick="loadLeaderboard('all')" class="active" id="btnAll">🌍 Всё</button>
         </div>
-        <div id="topsContainer"><div class="card">Загрузка чартов... 🎶</div></div>
+        <div id="topsContainer"><div class="card" id="loadingCharts">Загрузка чартов... 🎶</div></div>
     </div>
 
     <!-- Профиль -->
     <div id="profile" class="section">
-        <h3 style="margin-top: 0;">👤 Профиль и Настройки</h3>
+        <h3 id="hProfile" style="margin-top: 0;">👤 Профиль и Настройки</h3>
         <div class="card">
-            <p><b>Паспорт Юниверса активен.</b> ✨</p>
-            <p>🏷 Активный титул: <span id="profileTitleVal">Нет</span></p>
-            <p>🖼 Активная рамка: <span id="profileFrameVal">Нет</span></p>
-            <p>🏆 Достижения: <span id="profileAchVal">Пока нет</span></p>
+            <p><b id="profileActiveText">Паспорт Юниверса активен.</b> ✨</p>
+            <p><span id="titleLabel">🏷 Активный титул:</span> <span id="profileTitleVal">Нет</span></p>
+            <p><span id="frameLabel">🖼 Активная рамка:</span> <span id="profileFrameVal">Нет</span></p>
+            <p><span id="achLabel">🏆 Достижения:</span> <span id="profileAchVal">Пока нет</span></p>
             <div style="margin-top: 10px;">
-                <button onclick="toggleTheme()">🌙/☀️ Сменить тему</button>
+                <button onclick="toggleTheme()" id="themeBtn">🌙/☀️ Сменить тему</button>
             </div>
         </div>
     </div>
 
     <!-- Панель Администратора -->
     <div id="admin" class="section">
-        <h3 style="margin-top: 0;">⚙️ Панель Администратора</h3>
+        <h3 id="hAdmin" style="margin-top: 0;">⚙️ Панель Администратора</h3>
         
         <div class="card">
-            <h4>🖼 Управление баннерами (WB-слайдер)</h4>
-            <input type="text" id="banImg" placeholder="URL картинки баннера" style="width: 90%; margin-bottom: 8px;"><br>
-            <button onclick="addBanner()" style="background: var(--accent-gradient); color: white; width: 100%; margin-bottom: 12px;">Добавить баннер</button>
-            <div id="adminBannersContainer">Загрузка баннеров...</div>
-        </div>
-
-        <div class="card">
-            <h4>➕ Добавить Новость</h4>
+            <h4 id="adminAddNewsTitle">➕ Добавить Новость</h4>
             <input type="text" id="newsTitle" placeholder="Заголовок" style="width: 90%; margin-bottom: 8px;"><br>
             <input type="text" id="newsText" placeholder="Текст новости" style="width: 90%; margin-bottom: 8px;"><br>
-            <input type="text" id="newsMedia" placeholder="URL картинки" style="width: 90%; margin-bottom: 8px;"><br>
-            <button onclick="addNews()" style="background: var(--accent-gradient); color: white; width: 100%;">Создать новость</button>
+            <input type="text" id="newsMedia" placeholder="URL картинки (например с Postimages)" style="width: 90%; margin-bottom: 8px;"><br>
+            <button onclick="addNews()" id="adminCreateNewsBtn" style="background: var(--accent-gradient); color: white; width: 100%;">Создать новость</button>
         </div>
 
         <div class="card">
-            <h4>🛍 Создать Товар в Магазине</h4>
+            <h4 id="adminShopTitle">🛍 Создать Товар в Магазине</h4>
             <input type="text" id="shopName" placeholder="Название товара" style="width: 90%; margin-bottom: 8px;"><br>
-            <input type="number" id="shopPrice" placeholder="Цена (для бесплатных 0)" style="width: 90%; margin-bottom: 8px;"><br>
+            <input type="number" id="shopPrice" placeholder="Цена (цифра, для бесплатных 0)" style="width: 90%; margin-bottom: 8px;"><br>
             <select id="shopCurrency" style="width: 96%; margin-bottom: 8px;">
                 <option value="stars">Звезды 🌟</option>
                 <option value="season">Сезонная валюта (🥥)</option>
@@ -180,27 +172,35 @@
                 <option value="temporary">Временный</option>
                 <option value="limited">Лимитированный</option>
             </select><br>
-            <input type="text" id="shopImage" placeholder="URL картинки товара" style="width: 90%; margin-bottom: 8px;"><br>
-            <button onclick="addShopItem()" style="background: var(--accent-gradient); color: white; width: 100%;">Создать товар</button>
+            <input type="text" id="shopImage" placeholder="URL картинки товара (необязательно)" style="width: 90%; margin-bottom: 8px;"><br>
+            <button onclick="addShopItem()" id="adminCreateShopBtn" style="background: var(--accent-gradient); color: white; width: 100%;">Создать товар</button>
         </div>
 
         <div class="card">
-            <h4>⚡ Создать Ивент</h4>
+            <h4 id="adminEventTitle">⚡ Создать Ивент</h4>
             <input type="text" id="eventTitle" placeholder="Название ивента" style="width: 90%; margin-bottom: 8px;"><br>
             <input type="text" id="eventDesc" placeholder="Описание" style="width: 90%; margin-bottom: 8px;"><br>
             <input type="text" id="eventReward" placeholder="Награда" style="width: 90%; margin-bottom: 8px;"><br>
             <input type="text" id="eventCover" placeholder="URL обложки" style="width: 90%; margin-bottom: 8px;"><br>
-            <button onclick="addEvent()" style="background: var(--accent-gradient); color: white; width: 100%;">Создать ивент</button>
+            <button onclick="addEvent()" id="adminCreateEventBtn" style="background: var(--accent-gradient); color: white; width: 100%;">Создать ивент</button>
+        </div>
+
+        <!-- Управление баннером для админа -->
+        <div class="card">
+            <h4 id="adminBannerTitle">📢 Управление баннером</h4>
+            <input type="text" id="bannerTextInput" placeholder="Текст нового баннера" style="width: 90%; margin-bottom: 8px;"><br>
+            <input type="text" id="bannerLinkInput" placeholder="Ссылка (необязательно)" style="width: 90%; margin-bottom: 8px;"><br>
+            <button onclick="updateBanner()" id="adminUpdateBannerBtn" style="background: var(--accent-gradient); color: white; width: 100%;">Обновить баннер</button>
         </div>
     </div>
 
     <!-- Нижняя панель («островок») -->
     <div class="glass-dock" id="dockMenu">
-        <button class="active" onclick="switchTab('feed', this); loadNews();">📰 Главная</button>
-        <button onclick="switchTab('shop', this); loadShop();">🛍 Магазин</button>
-        <button onclick="switchTab('events', this); loadEvents();">⚡ Ивенты</button>
-        <button onclick="switchTab('tops', this); loadLeaderboard('all');">🏆 Топы</button>
-        <button onclick="switchTab('profile', this)">👤 Профиль</button>
+        <button class="active" onclick="switchTab('feed', this); loadNews();" id="tabFeed">📰 Главная</button>
+        <button onclick="switchTab('shop', this); loadShop();" id="tabShop">🛍 Магазин</button>
+        <button onclick="switchTab('events', this); loadEvents();" id="tabEvents">⚡ Ивенты</button>
+        <button onclick="switchTab('tops', this); loadLeaderboard('all');" id="tabTops">🏆 Топы</button>
+        <button onclick="switchTab('profile', this)" id="tabProfile">👤 Профиль</button>
     </div>
 
     <script>
@@ -210,8 +210,401 @@
         let currentUserId = String(tg.initDataUnsafe?.user?.id || "123456789");
         const ADMIN_ID = "8970685551";
 
-        let currentSlide = 0;
-        let slideInterval = null;
+        // Словарь на 26 языков
+        const i18n = {
+            ru: {
+                feed: "📰 Главная", shop: "🛍 Магазин", events: "⚡ Ивенты", tops: "🏆 Топы", profile: "👤 Профиль", admin: "⚙️ Админ",
+                newsTitle: "📰 Новостная лента", shopTitle: "🛍 Магазин кастомизации", eventsTitle: "⚡ Активные ивенты", topsTitle: "🏆 Топы активов", profileTitle: "👤 Профиль и Настройки",
+                bannerDefault: "🔥 Хит сезона: Уникальные рамки и титулы уже в магазине! Залетай и забирай! 🚀",
+                loadingNews: "Загрузка новостей... 🚀", loadingShop: "Загрузка товаров... ✨", loadingEvents: "Загрузка ивентов... ⚡", loadingCharts: "Загрузка чартов... 🎶",
+                day: "☀️ День", week: "⚡ Неделя", month: "🌙 Месяц", all: "🌍 Всё",
+                passportActive: "Паспорт Юниверса активен. ✨", titleLbl: "🏷 Активный титул:", frameLbl: "🖼 Активная рамка:", achLbl: "🏆 Достижения:", noVal: "Нет", noAch: "Пока нет",
+                themeBtn: "🌙/☀️ Сменить тему", levelTxt: "Лев.",
+                adminNews: "➕ Добавить Новость", createNewsBtn: "Создать новость",
+                adminShop: "🛍 Создать Товар в Магазине", createShopBtn: "Создать товар",
+                adminEvent: "⚡ Создать Ивент", createEventBtn: "Создать ивент",
+                adminBanner: "📢 Управление баннером", updateBannerBtn: "Обновить баннер"
+            },
+            en: {
+                feed: "📰 Home", shop: "🛍 Shop", events: "⚡ Events", tops: "🏆 Leaders", profile: "👤 Profile", admin: "⚙️ Admin",
+                newsTitle: "📰 News Feed", shopTitle: "🛍 Customization Shop", eventsTitle: "⚡ Active Events", topsTitle: "🏆 Leaderboard", profileTitle: "👤 Profile & Settings",
+                bannerDefault: "🔥 Season Hit: Unique frames and titles are in the shop! Jump in and grab them! 🚀",
+                loadingNews: "Loading news... 🚀", loadingShop: "Loading items... ✨", loadingEvents: "Loading events... ⚡", loadingCharts: "Loading charts... 🎶",
+                day: "☀️ Day", week: "⚡ Week", month: "🌙 Month", all: "🌍 All",
+                passportActive: "Universe Passport is active. ✨", titleLbl: "🏷 Active Title:", frameLbl: "🖼 Active Frame:", achLbl: "🏆 Achievements:", noVal: "None", noAch: "None yet",
+                themeBtn: "🌙/☀️ Toggle Theme", levelTxt: "Lvl.",
+                adminNews: "➕ Add News", createNewsBtn: "Create News",
+                adminShop: "🛍 Create Shop Item", createShopBtn: "Create Item",
+                adminEvent: "⚡ Create Event", createEventBtn: "Create Event",
+                adminBanner: "📢 Manage Banner", updateBannerBtn: "Update Banner"
+            },
+            hy: {
+                feed: "📰 Գլխավոր", shop: "🛍 Խանութ", events: "⚡ Իվենթներ", tops: "🏆 Թոփեր", profile: "👤 Անձնագիր", admin: "⚙️ Ադմին",
+                newsTitle: "📰 Նորությունների ժապավեն", shopTitle: "🛍 Ձևավորման խանութ", eventsTitle: "⚡ Ակտիվ իրադարձություններ", topsTitle: "🏆 Առաջատարներ", profileTitle: "👤 Անձնագիր և Կարգավորումներ",
+                bannerDefault: "🔥 Սեզոնի հիթ. Եզակի շրջանակներն ու տիտղոսները արդեն խանութում են: 🚀",
+                loadingNews: "Բեռնվում են նորությունները... 🚀", loadingShop: "Բեռնվում են ապրանքները... ✨", loadingEvents: "Բեռնվում են իրադարձությունները... ⚡", loadingCharts: "Բեռնվում են չարթերը... 🎶",
+                day: "☀️ Օր", week: "⚡ Շաբաթ", month: "🌙 Ամիս", all: "🌍 Բոլորը",
+                passportActive: "Universe անձնագիրը ակտիվ է: ✨", titleLbl: "🏷 Ակտիվ տիտղոս:", frameLbl: "🖼 Ակտիվ շրջանակ:", achLbl: "🏆 Նվաճումներ:", noVal: "Չկա", noAch: "Դեռ չկա",
+                themeBtn: "🌙/☀️ Փոխել թեման", levelTxt: "Մակ.",
+                adminNews: "➕ Ավելացնել նորություն", createNewsBtn: "Ստեղծել նորություն",
+                adminShop: "🛍 Ստեղծել ապրանք", createShopBtn: "Ստեղծել ապրանք",
+                adminEvent: "⚡ Ստեղծել իրադարձություն", createEventBtn: "Ստեղծել իրադարձություն",
+                adminBanner: "📢 Quản lý biểu ngữ", updateBannerBtn: "Обновить"
+            },
+            az: {
+                feed: "📰 Əsas", shop: "🛍 Mağaza", events: "⚡ Tədbirlər", tops: "🏆 Top", profile: "👤 Profil", admin: "⚙️ Admin",
+                newsTitle: "📰 Xəbər lentası", shopTitle: "🛍 Fərdiləşdirmə mağazası", eventsTitle: "⚡ Aktiv tədbirlər", topsTitle: "🏆 Liderlər lövhəsi", profileTitle: "👤 Profil və Ayarlar",
+                bannerDefault: "🔥 Mövsümün hiti: Unikal çərçivələr və titullar mağazadadır! Gəl və götür! 🚀",
+                loadingNews: "Xəbərlər yüklənir... 🚀", loadingShop: "Məhsullar yüklənir... ✨", loadingEvents: "Tədbirlər yüklənir... ⚡", loadingCharts: "Çartlar yüklənir... 🎶",
+                day: "☀️ Gün", week: "⚡ Həftə", month: "🌙 Ay", all: "🌍 Hamısı",
+                passportActive: "Universe Pasportu aktivdir. ✨", titleLbl: "🏷 Aktiv titul:", frameLbl: "🖼 Aktiv çərçivə:", achLbl: "🏆 Nailiyyətlər:", noVal: "Yoxdur", noAch: "Hələ ki yoxdur",
+                themeBtn: "🌙/☀️ Temanı dəyiş", levelTxt: "Səviyyə",
+                adminNews: "➕ Xəbər əlavə et", createNewsBtn: "Xəbər yarat",
+                adminShop: "🛍 Məhsul yarat", createShopBtn: "Məhsul yarat",
+                adminEvent: "⚡ Tədbir yarat", createEventBtn: "Tədbir yarat",
+                adminBanner: "📢 Banner idarəetməsi", updateBannerBtn: "Yenilə"
+            },
+            ka: {
+                feed: "📰 მთავარი", shop: "🛍 მაღაზია", events: "⚡ ივენթები", tops: "🏆 ტოპები", profile: "👤 პროფილი", admin: "⚙️ ადმინი",
+                newsTitle: "📰 სიახლეების лента", shopTitle: "🛍 კასტომიზაციის მაღაზია", eventsTitle: "⚡ აქტიური ივენթები", topsTitle: "🏆 ლიდერები", profileTitle: "👤 პროფილი და პარამეტრები",
+                bannerDefault: "🔥 სეზონის ჰიტი: უნიკალური ჩარჩოები და ტიტულები უკვე მაღაზიაშია! 🚀",
+                loadingNews: "სიახლეები იტვირთება... 🚀", loadingShop: "ნივთები იტვირთება... ✨", loadingEvents: "ივენթები იტვირთება... ⚡", loadingCharts: "ჩარტები იტვირთება... 🎶",
+                day: "☀️ დღე", week: "⚡ კვირა", month: "🌙 თვე", all: "🌍 ყველა",
+                passportActive: "Universe პასპორტი აქტიურია. ✨", titleLbl: "🏷 აქტიური ტიტული:", frameLbl: "🖼 აქტიური ჩარჩო:", achLbl: "🏆 მიღწევები:", noVal: "არ არის", noAch: "ჯერ არ არის",
+                themeBtn: "🌙/☀️ თემის შეცვლა", levelTxt: "დონე",
+                adminNews: "➕ სიახლის დამატება", createNewsBtn: "სიახლის შექმნა",
+                adminShop: "🛍 ნივთის შექმნა", createShopBtn: "ნივთის შექმნა",
+                adminEvent: "⚡ ივენթის შექმნა", createEventBtn: "ივენթის შექმნა",
+                adminBanner: "📢 ბანერის მართვა", updateBannerBtn: "განახლება"
+            },
+            uk: {
+                feed: "📰 Головна", shop: "🛍 Магазин", events: "⚡ Івенти", tops: "🏆 Топи", profile: "👤 Профіль", admin: "⚙️ Адмін",
+                newsTitle: "📰 Новинна стрічка", shopTitle: "🛍 Магазин кастомізації", eventsTitle: "⚡ Активні івенти", topsTitle: "🏆 Топи активів", profileTitle: "👤 Профіль та Налаштування",
+                bannerDefault: "🔥 Хіт сезону: Унікальні рамки та титули вже в магазині! Залітай та забирай! 🚀",
+                loadingNews: "Завантаження новин... 🚀", loadingShop: "Завантаження товарів... ✨", loadingEvents: "Завантаження івентів... ⚡", loadingCharts: "Завантаження чартів... 🎶",
+                day: "☀️ День", week: "⚡ Тиждень", month: "🌙 Місяць", all: "🌍 Все",
+                passportActive: "Паспорт Юніверса активний. ✨", titleLbl: "🏷 Активний титул:", frameLbl: "🖼 Активна рамка:", achLbl: "🏆 Досягнення:", noVal: "Немає", noAch: "Поки немає",
+                themeBtn: "🌙/☀️ Змінити тему", levelTxt: "Лів.",
+                adminNews: "➕ Додати новину", createNewsBtn: "Створити новину",
+                adminShop: "🛍 Створити товар", createShopBtn: "Створити товар",
+                adminEvent: "⚡ Створити івент", createEventBtn: "Створити івент",
+                adminBanner: "📢 Керування банером", updateBannerBtn: "Оновити банер"
+            },
+            be: {
+                feed: "📰 Галоўная", shop: "🛍 Магазін", events: "⚡ Івэнты", tops: "🏆 Топы", profile: "👤 Профіль", admin: "⚙️ Адмін",
+                newsTitle: "📰 Навінавая стужка", shopTitle: "🛍 Магазін кастамізацыі", eventsTitle: "⚡ Актыўныя івэнты", topsTitle: "🏆 Топы актываў", profileTitle: "👤 Профіль і Настройкі",
+                bannerDefault: "🔥 Хіт сезона: Унікальныя рамкі і тытулы ўжо ў магазіне! Залятай і забірай! 🚀",
+                loadingNews: "Загрузка навін... 🚀", loadingShop: "Загрузка тавараў... ✨", loadingEvents: "Загрузка івэнтаў... ⚡", loadingCharts: "Загрузка чартаў... 🎶",
+                day: "☀️ Дзень", week: "⚡ Тыдзень", month: "🌙 Месяц", all: "🌍 Усё",
+                passportActive: "Пашпарт Юніверса актыўны. ✨", titleLbl: "🏷 Актыўны тытул:", frameLbl: "🖼 Актыўная рамка:", achLbl: "🏆 Дасягненні:", noVal: "Няма", noAch: "Пакуль няма",
+                themeBtn: "🌙/☀️ Змяніць тэму", levelTxt: "Уз.",
+                adminNews: "➕ Дадаць навіну", createNewsBtn: "Стварыць навіну",
+                adminShop: "🛍 Стварыць тавар", createShopBtn: "Стварыць тавар",
+                adminEvent: "⚡ Стварыць івэнт", createShopBtn: "Стварыць івэнт",
+                adminBanner: "📢 Кіраванне банерам", updateBannerBtn: "Абнавіць банер"
+            },
+            uz: {
+                feed: "📰 Asosiy", shop: "🛍 Do'kon", events: "⚡ Tadbirlar", tops: "🏆 Top", profile: "👤 Profil", admin: "⚙️ Admin",
+                newsTitle: "📰 Yangiliklar lentasi", shopTitle: "🛍 Moslashtirish do'koni", eventsTitle: "⚡ Faol tadbirlar", topsTitle: "🏆 Reyting", profileTitle: "👤 Profil va Sozlamalar",
+                bannerDefault: "🔥 Mavsum xiti: Noyob ramkalar va unvonlar do'konda! Kirib oling! 🚀",
+                loadingNews: "Yangiliklar yuklanmoqda... 🚀", loadingShop: "Mahsulotlar yuklanmoqda... ✨", loadingEvents: "Tadbirlar yuklanmoqda... ⚡", loadingCharts: "Chartlar yuklanmoqda... 🎶",
+                day: "☀️ Kun", week: "⚡ Hafta", month: "🌙 Oy", all: "🌍 Barchasi",
+                passportActive: "Universe Pasporti faol. ✨", titleLbl: "🏷 Faol unvon:", frameLbl: "🖼 Faol ramka:", achLbl: "🏆 Yutuqlar:", noVal: "Yo'q", noAch: "Hozircha yo'q",
+                themeBtn: "🌙/☀️ Mavzuni o'zgartirish", levelTxt: "Daraja",
+                adminNews: "➕ Yangilik qo'shish", createNewsBtn: "Yangilik yaratish",
+                adminShop: "🛍 Mahsulot yaratish", createShopBtn: "Mahsulot yaratish",
+                adminEvent: "⚡ Tadbir yaratish", createEventBtn: "Tadbir yaratish",
+                adminBanner: "📢 Banni boshqarish", updateBannerBtn: "Yangilash"
+            },
+            kk: {
+                feed: "📰 Басты", shop: "🛍 Дүкен", events: "⚡ Іс-шаралар", tops: "🏆 Топтар", profile: "👤 Профиль", admin: "⚙️ Админ",
+                newsTitle: "📰 Жаңалықтар лентасы", shopTitle: "🛍 Теңшеу дүкені", eventsTitle: "⚡ Белсенді іс-шаралар", topsTitle: "🏆 Көшбасшылар", profileTitle: "👤 Профиль және Параметрлер",
+                bannerDefault: "🔥 Маусым хиті: Бірегей жақтаулар мен атақтар дүкенде! Кіріп, алып кет! 🚀",
+                loadingNews: "Жаңалықтар жүктелуде... 🚀", loadingShop: "Тауарлар жүктелуде... ✨", loadingEvents: "Іс-шаралар жүктелуде... ⚡", loadingCharts: "Чарттар жүктелуде... 🎶",
+                day: "☀️ Күн", week: "⚡ Апта", month: "🌙 Ай", all: "🌍 Барлығы",
+                passportActive: "Universe паспорты белсенді. ✨", titleLbl: "🏷 Белсенді атақ:", frameLbl: "🖼 Белсенді жақтау:", achLbl: "🏆 Жетістіктер:", noVal: "Жоқ", noAch: "Әзірге жоқ",
+                themeBtn: "🌙/☀️ Тақырыпты өзгерту", levelTxt: "Дең.",
+                adminNews: "➕ Жаңалық қосу", createNewsBtn: "Жаңалық жасау",
+                adminShop: "🛍 Тауар жасау", createShopBtn: "Тауар жасау",
+                adminEvent: "⚡ Іс-шара жасау", createEventBtn: "Іс-шара жасау",
+                adminBanner: "📢 Баннерді басқару", updateBannerBtn: "Жаңарту"
+            },
+            ky: {
+                feed: "📰 Башкы", shop: "🛍 Дүкон", events: "⚡ Иш-чаралар", tops: "🏆 Топтор", profile: "👤 Профиль", admin: "⚙️ Админ",
+                newsTitle: "📰 Жаңылыктар лентасы", shopTitle: "🛍 Иректөө дүкону", eventsTitle: "⚡ Активдүү иш-чаралар", topsTitle: "🏆 Лидерлер", profileTitle: "👤 Профиль жана Жөндөөлөр",
+                bannerDefault: "🔥 Сезон хити: Уникалдуу алкактар жана титулдар дүкөндө! 🚀",
+                loadingNews: "Жаңылыктар жүктөлүүдө... 🚀", loadingShop: "Товарлар жүктөлүүдө... ✨", loadingEvents: "Иш-чаралар жүктөлүүдө... ⚡", loadingCharts: "Чектр жүктөлүүдө... 🎶",
+                day: "☀️ Күн", week: "⚡ Апта", month: "🌙 Ай", all: "🌍 Баары",
+                passportActive: "Universe паспорту активдүү. ✨", titleLbl: "🏷 Активдүү титул:", frameLbl: "🖼 Активдүү алкак:", achLbl: "🏆 Жетишкендиктер:", noVal: "Жок", noAch: "Азырынча жок",
+                themeBtn: "🌙/☀️ Теманы өзгөртүү", levelTxt: "Дң.",
+                adminNews: "➕ Жаңылык кошуу", createNewsBtn: "Жаңылык түзүү",
+                adminShop: "🛍 Товар түзүү", createShopBtn: "Товар түзүү",
+                adminEvent: "⚡ Иш-чара түзүү", createEventBtn: "Иш-чара түзүү",
+                adminBanner: "📢 Баннерди башкаруу", updateBannerBtn: "Жаңыртуу"
+            },
+            tg: {
+                feed: "📰 Асосӣ", shop: "🛍 Дӯкон", events: "⚡ Чорабиниҳо", tops: "🏆 Топҳо", profile: "👤 Профил", admin: "⚙️ Админ",
+                newsTitle: "📰 Лентаи хабарҳо", shopTitle: "🛍 Дӯкони фардисозӣ", eventsTitle: "⚡ Чорабиниҳои фаъол", topsTitle: "🏆 Пешсафон", profileTitle: "👤 Профил ва Танзимот",
+                bannerDefault: "🔥 Ҳити мавсим: Чорчӯбаҳо ва унвонҳои нодир дар дӯкон ҳастанд! 🚀",
+                loadingNews: "Боргирии хабарҳо... 🚀", loadingShop: "Боргирии молҳо... ✨", loadingEvents: "Боргирии чорабиниҳо... ⚡", loadingCharts: "Боргирии чартҳо... 🎶",
+                day: "☀️ Рӯз", week: "⚡ Ҳафта", month: "🌙 Моҳ", all: "🌍 Ҳама",
+                passportActive: "Шиносномаи Universe фаъол аст. ✨", titleLbl: "🏷 Унвони фаъол:", frameLbl: "🖼 Чорчӯбаи фаъол:", achLbl: "🏆 Дастовардҳо:", noVal: "Нест", noAch: "Ҳоло нест",
+                themeBtn: "🌙/☀️ Иваз кардани мавзӯъ", levelTxt: "Сатҳ",
+                adminNews: "➕ Илова кардани хабар", createNewsBtn: "Эҷоди хабар",
+                adminShop: "🛍 Эҷоди мол", createShopBtn: "Эҷоди мол",
+                adminEvent: "⚡ Эҷоди чорабинӣ", createEventBtn: "Эҷоди чорабинӣ",
+                adminBanner: "📢 Идоракунии баннер", updateBannerBtn: "Навсозӣ"
+            },
+            ja: {
+                feed: "📰 ホーム", shop: "🛍 ショップ", events: "⚡ イベント", tops: "🏆 ランキング", profile: "👤 プロフィール", admin: "⚙️ 管理者",
+                newsTitle: "📰 ニュースフィード", shopTitle: "🛍 カスタマイズショップ", eventsTitle: "⚡ アクティブイベント", topsTitle: "🏆 リーダーボード", profileTitle: "👤 プロフィールと設定",
+                bannerDefault: "🔥 シーズンヒット：ユニークなフレームとタイトルがショップに登場！今すぐゲット！ 🚀",
+                loadingNews: "ニュースを読み込み中... 🚀", loadingShop: "アイテムを読み込み中... ✨", loadingEvents: "イベントを読み込み中... ⚡", loadingCharts: "チャートを読み込み中... 🎶",
+                day: "☀️ 日", week: "⚡ 週", month: "🌙 月", all: "🌍 すべて",
+                passportActive: "ユニバースパスポート有効中 ✨", titleLbl: "🏷 アクティブ称号:", frameLbl: "🖼 アクティブフレーム:", achLbl: "🏆 実績:", noVal: "なし", noAch: "まだなし",
+                themeBtn: "🌙/☀️ テーマ切替", levelTxt: "Lv.",
+                adminNews: "➕ ニュースを追加", createNewsBtn: "ニュースを作成",
+                adminShop: "🛍 ショップアイテムを作成", createShopBtn: "アイテムを作成",
+                adminEvent: "⚡ イベントを作成", createEventBtn: "イベントを作成",
+                adminBanner: "📢 バナー管理", updateBannerBtn: "更新"
+            },
+            ko: {
+                feed: "📰 홈", shop: "🛍 상점", events: "⚡ 이벤트", tops: "🏆 순위", profile: "👤 프로필", admin: "⚙️ 관리자",
+                newsTitle: "📰 뉴스 피드", shopTitle: "🛍 커스텀 상점", eventsTitle: "⚡ 진행 중인 이벤트", topsTitle: "🏆 리더보드", profileTitle: "👤 프로필 및 설정",
+                bannerDefault: "🔥 시즌 히트: 유니크한 프레임과 칭호가 상점에 도착했습니다! 지금 확인하세요! 🚀",
+                loadingNews: "뉴스 로딩 중... 🚀", loadingShop: "상품 로딩 중... ✨", loadingEvents: "이벤트 로딩 중... ⚡", loadingCharts: "차트 로딩 중... 🎶",
+                day: "☀️ 일", week: "⚡ 주", month: "🌙 월", all: "🌍 전체",
+                passportActive: "유니버스 패스포트 활성화됨 ✨", titleLbl: "🏷 장착 칭호:", frameLbl: "🖼 장착 프레임:", achLbl: "🏆 업적:", noVal: "없음", noAch: "아직 없음",
+                themeBtn: "🌙/☀️ 테마 변경", levelTxt: "레벨",
+                adminNews: "➕ 뉴스 추가", createNewsBtn: "뉴스 만들기",
+                adminShop: "🛍 상품 만들기", createShopBtn: "상품 만들기",
+                adminEvent: "⚡ 이벤트 만들기", createEventBtn: "이벤트 만들기",
+                adminBanner: "📢 배너 관리", updateBannerBtn: "업데이트"
+            },
+            zh: {
+                feed: "📰 首页", shop: "🛍 商店", events: "⚡ 活动", tops: "🏆 排行榜", profile: "👤 个人资料", admin: "⚙️ 管理员",
+                newsTitle: "📰 新闻动态", shopTitle: "🛍 自定义商店", eventsTitle: "⚡ 进行中的活动", topsTitle: "🏆 活跃排行榜", profileTitle: "👤 个人资料与设置",
+                bannerDefault: "🔥 赛季热门：独特边框与称号已上架商店！快来抢购！ 🚀",
+                loadingNews: "正在加载新闻... 🚀", loadingShop: "正在加载商品... ✨", loadingEvents: "正在加载活动... ⚡", loadingCharts: "正在加载排行榜... 🎶",
+                day: "☀️ 日", week: "⚡ 周", month: "🌙 月", all: "🌍 全部",
+                passportActive: "Universe 护照已激活 ✨", titleLbl: "🏷 当前称号:", frameLbl: "🖼 当前边框:", achLbl: "🏆 成就:", noVal: "无", noAch: "暂无",
+                themeBtn: "🌙/☀️ 切换主题", levelTxt: "等级",
+                adminNews: "➕ 添加新闻", createNewsBtn: "创建新闻",
+                adminShop: "🛍 创建商品", createShopBtn: "创建商品",
+                adminEvent: "⚡ 创建活动", createEventBtn: "创建活动",
+                adminBanner: "📢 横幅管理", updateBannerBtn: "更新"
+            },
+            tr: {
+                feed: "📰 Ana Sayfa", shop: "🛍 Mağaza", events: "⚡ Etkinlikler", tops: "🏆 Liderler", profile: "👤 Profil", admin: "⚙️ Yönetici",
+                newsTitle: "📰 Haber Akışı", shopTitle: "🛍 Özelleştirme Mağazası", eventsTitle: "⚡ Aktif Etkinlikler", topsTitle: "🏆 Sıralama", profileTitle: "👤 Profil ve Ayarlar",
+                bannerDefault: "🔥 Sezonun Hiti: Eşsiz çerçeveler ve unvanlar mağazada! Hemen al! 🚀",
+                loadingNews: "Haberler yükleniyor... 🚀", loadingShop: "Ürünler yükleniyor... ✨", loadingEvents: "Etkinlikler yükleniyor... ⚡", loadingCharts: "Grafikler yükleniyor... 🎶",
+                day: "☀️ Gün", week: "⚡ Hafta", month: "🌙 Ay", all: "🌍 Tümü",
+                passportActive: "Universe Pasaportu aktif. ✨", titleLbl: "🏷 Aktif Unvan:", frameLbl: "🖼 Aktif Çerçeve:", achLbl: "🏆 Başarılar:", noVal: "Yok", noAch: "Henüz yok",
+                themeBtn: "🌙/☀️ Tema Değiştir", levelTxt: "Seviye",
+                adminNews: "➕ Haber Ekle", createNewsBtn: "Haber Oluştur",
+                adminShop: "🛍 Ürün Oluştur", createShopBtn: "Ürün Oluştur",
+                adminEvent: "⚡ Etkinlik Oluştur", createEventBtn: "Etkinlik Oluştur",
+                adminBanner: "📢 Banner Yönetimi", updateBannerBtn: "Güncelle"
+            },
+            lt: {
+                feed: "📰 Pradžia", shop: "🛍 Parduotuvė", events: "⚡ Renginiai", tops: "🏆 Lyderiai", profile: "👤 Profilis", admin: "⚙️ Admin",
+                newsTitle: "📰 Naujienų srautas", shopTitle: "🛍 Pritaikymo parduotuvė", eventsTitle: "⚡ Aktyvūs renginiai", topsTitle: "🏆 Lyderių lentelė", profileTitle: "👤 Profilis ir Nustatymai",
+                bannerDefault: "🔥 Sezono hitas: Unikalūs rėmeliai ir titulai jau parduotuvėje! 🚀",
+                loadingNews: "Kraunamos naujienos... 🚀", loadingShop: "Kraunamos prekės... ✨", loadingEvents: "Kraunami renginiai... ⚡", loadingCharts: "Kraunamireitingai... 🎶",
+                day: "☀️ Diena", week: "⚡ Savaitė", month: "🌙 Mėnuo", all: "🌍 Viskas",
+                passportActive: "Universe pasportas aktyvus. ✨", titleLbl: "🏷 Aktyvus titulas:", frameLbl: "🖼 Aktyvus rėmelis:", achLbl: "🏆 Pasiekimai:", noVal: "Nėra", noAch: "Dar nėra",
+                themeBtn: "🌙/☀️ Pakeisti temą", levelTxt: "Lyg.",
+                adminNews: "➕ Pridėti naujieną", createNewsBtn: "Sukurti naujieną",
+                adminShop: "🛍 Sukurti prekę", createShopBtn: "Sukurti prekę",
+                adminEvent: "⚡ Sukurti renginį", createEventBtn: "Sukurti renginį",
+                adminBanner: "📢 Reklaminjuostės valdymas", updateBannerBtn: "Atnaujinti"
+            },
+            lv: {
+                feed: "📰 Sākums", shop: "🛍 Veikals", events: "⚡ Notikumi", tops: "🏆 Topi", profile: "👤 Profils", admin: "⚙️ Admin",
+                newsTitle: "📰 Ziņu plūsma", shopTitle: "🛍 Pielāgošanas veikals", eventsTitle: "⚡ Aktīvie notikumi", topsTitle: "🏆 Līderu saraksts", profileTitle: "👤 Profils un Iestatījumi",
+                bannerDefault: "🔥 Sezonas hits: Unikāli rāmji un tituli jau ir veikalā! 🚀",
+                loadingNews: "Notiek ziņu ielāde... 🚀", loadingShop: "Notiek preču ielāde... ✨", loadingEvents: "Notiek notikumu ielāde... ⚡", loadingCharts: "Notiek diagrammu ielāde... 🎶",
+                day: "☀️ Diena", week: "⚡ Nedēļa", month: "🌙 Mēnesis", all: "🌍 Viss",
+                passportActive: "Universe Pase ir aktīva. ✨", titleLbl: "🏷 Aktīvais tituls:", frameLbl: "🖼 Aktīvais rāmis:", achLbl: "🏆 Sasniegumi:", noVal: "Nav", noAch: "Vēl nav",
+                themeBtn: "🌙/☀️ Mainīt tēmu", levelTxt: "Līm.",
+                adminNews: "➕ Pievienot ziņu", createNewsBtn: "Izveidot ziņu",
+                adminShop: "🛍 Izveidot preci", createShopBtn: "Izveidot preci",
+                adminEvent: "⚡ Izveidot notikumu", createEventBtn: "Izveidot notikumu",
+                adminBanner: "📢 Banera pārvaldība", updateBannerBtn: "Atjaunināt"
+            },
+            et: {
+                feed: "📰 Avaleht", shop: "🛍 Pood", events: "⚡ Sündmused", tops: "🏆 Edetabel", profile: "👤 Profiil", admin: "⚙️ Admin",
+                newsTitle: "📰 Uudistevoog", shopTitle: "🛍 Kohanduste pood", eventsTitle: "⚡ Aktiivsed sündmused", topsTitle: "🏆 Edetabel", profileTitle: "👤 Profiil ja Seaded",
+                bannerDefault: "🔥 Hooaja hitt: Unikaalsed raamid ja tiitlid on poes! Hüppa sisse! 🚀",
+                loadingNews: "Uudiste laadimine... 🚀", loadingShop: "Kaupade laadimine... ✨", loadingEvents: "Sündmuste laadimine... ⚡", loadingCharts: "Edetabeli laadimine... 🎶",
+                day: "☀️ Päev", week: "⚡ Nädal", month: "🌙 Kuu", all: "🌍 Kõik",
+                passportActive: "Universe pass on aktiivne. ✨", titleLbl: "🏷 Aktiivne tiitel:", frameLbl: "🖼 Aktiivne raam:", achLbl: "🏆 Saavutused:", noVal: "Puudub", noAch: "Veel pole",
+                themeBtn: "🌙/☀️ Vaheta teemat", levelTxt: "Tase",
+                adminNews: "➕ Lisa uudis", createNewsBtn: "Loo uudis",
+                adminShop: "🛍 Loo toode", createShopBtn: "Loo toode",
+                adminEvent: "⚡ Loo sündmus", createEventBtn: "Loo sündmus",
+                adminBanner: "📢 Bänneri haldus", updateBannerBtn: "Uuenda"
+            },
+            sv: {
+                feed: "📰 Hem", shop: "🛍 Butik", events: "⚡ Evenemang", tops: "🏆 Toppen", profile: "👤 Profil", admin: "⚙️ Admin",
+                newsTitle: "📰 Nyhetsflöde", shopTitle: "🛍 Anpassningsbutik", eventsTitle: "⚡ Aktiva evenemang", topsTitle: "🏆 Topplista", profileTitle: "👤 Profil & Inställningar",
+                bannerDefault: "🔥 Säsongens hit: Unikaramar och titlar finns ibutiken! Hämta dina nu! 🚀",
+                loadingNews: "Laddar nyheter... 🚀", loadingShop: "Laddar varor... ✨", loadingEvents: "Laddar evenemang... ⚡", loadingCharts: "Laddar listor... 🎶",
+                day: "☀️ Dag", week: "⚡ Vecka", month: "🌙 Månad", all: "🌍 Allt",
+                passportActive: "Universe-passet är aktivt. ✨", titleLbl: "🏷 Aktiv titel:", frameLbl: "🖼 Aktiv ram:", achLbl: "🏆 Prestationer:", noVal: "Ingen", noAch: "Inga än",
+                themeBtn: "🌙/☀️ Byt tema", levelTxt: "Nivå",
+                adminNews: "➕ Lägg till nyhet", createNewsBtn: "Skapa nyhet",
+                adminShop: "🛍 Skapa vara", createShopBtn: "Skapa vara",
+                adminEvent: "⚡ Skapa evenemang", createEventBtn: "Skapa evenemang",
+                adminBanner: "📢 Bannerhantering", updateBannerBtn: "Uppdatera"
+            },
+            fr: {
+                feed: "📰 Accueil", shop: "🛍 Boutique", events: "⚡ Événements", tops: "🏆 Tops", profile: "👤 Profil", admin: "⚙️ Admin",
+                newsTitle: "📰 Fil d'actualité", shopTitle: "🛍 Boutique de personnalisation", eventsTitle: "⚡ Événements actifs", topsTitle: "🏆 Classement", profileTitle: "👤 Profil & Paramètres",
+                bannerDefault: "🔥 Le tube de la saison : des cadres et titres uniques sont dans la boutique ! Fonce ! 🚀",
+                loadingNews: "Chargement des actualités... 🚀", loadingShop: "Chargement des articles... ✨", loadingEvents: "Chargement des événements... ⚡", loadingCharts: "Chargement des classements... 🎶",
+                day: "☀️ Jour", week: "⚡ Semaine", month: "🌙 Mois", all: "🌍 Tout",
+                passportActive: "Le passeport Universe est actif. ✨", titleLbl: "🏷 Titre actif :", frameLbl: "🖼 Cadre actif :", achLbl: "🏆 Succès :", noVal: "Aucun", noAch: "Aucun pour l'instant",
+                themeBtn: "🌙/☀️ Changer de thème", levelTxt: "Niv.",
+                adminNews: "➕ Ajouter une actu", createNewsBtn: "Créer l'actu",
+                adminShop: "🛍 Créer un article", createShopBtn: "Créer l'article",
+                adminEvent: "⚡ Créer un événement", createEventBtn: "Créer l'événement",
+                adminBanner: "📢 Gérer la bannière", updateBannerBtn: "Mettre à jour"
+            },
+            es: {
+                feed: "📰 Inicio", shop: "🛍 Tienda", events: "⚡ Eventos", tops: "🏆 Top", profile: "👤 Perfil", admin: "⚙️ Admin",
+                newsTitle: "📰 Noticias", shopTitle: "🛍 Tienda de personalización", eventsTitle: "⚡ Eventos activos", topsTitle: "🏆 Tabla de clasificación", profileTitle: "👤 Perfil y Ajustes",
+                bannerDefault: "🔥 ¡Éxito de la temporada: marcos y títulos únicos ya están en la tienda! ¡Entra y llévalos! 🚀",
+                loadingNews: "Cargando noticias... 🚀", loadingShop: "Cargando artículos... ✨", loadingEvents: "Cargando eventos... ⚡", loadingCharts: "Cargando listas... 🎶",
+                day: "☀️ Día", week: "⚡ Semana", month: "🌙 Mes", all: "🌍 Todo",
+                passportActive: "El Pasaporte Universe está activo. ✨", titleLbl: "🏷 Título activo:", frameLbl: "🖼 Marco activo:", achLbl: "🏆 Logros:", noVal: "Ninguno", noAch: "Aún no",
+                themeBtn: "🌙/☀️ Cambiar tema", levelTxt: "Nv.",
+                adminNews: "➕ Agregar noticia", createNewsBtn: "Crear noticia",
+                adminShop: "🛍 Crear artículo", createShopBtn: "Crear artículo",
+                adminEvent: "⚡ Crear evento", createEventBtn: "Crear evento",
+                adminBanner: "📢 Gestionar banner", updateBannerBtn: "Actualizar"
+            },
+            de: {
+                feed: "📰 Startseite", shop: "🛍 Shop", events: "⚡ Events", tops: "🏆 Bestenliste", profile: "👤 Profil", admin: "⚙️ Admin",
+                newsTitle: "📰 News-Feed", shopTitle: "🛍 Anpassungs-Shop", eventsTitle: "⚡ Aktive Events", topsTitle: "🏆 Bestenliste", profileTitle: "👤 Profil & Einstellungen",
+                bannerDefault: "🔥 Saison-Hit: Einzigartige Rahmen und Titel sind im Shop! Hol sie dir! 🚀",
+                loadingNews: "Lade News... 🚀", loadingShop: "Lade Artikel... ✨", loadingEvents: "Lade Events... ⚡", loadingCharts: "Lade Charts... 🎶",
+                day: "☀️ Tag", week: "⚡ Woche", month: "🌙 Monat", all: "🌍 Alle",
+                passportActive: "Universe-Pass ist aktiv. ✨", titleLbl: "🏷 Aktiver Titel:", frameLbl: "🖼 Aktiver Rahmen:", achLbl: "🏆 Erfolge:", noVal: "Keiner", noAch: "Noch keine",
+                themeBtn: "🌙/☀️ Design wechseln", levelTxt: "Stufe",
+                adminNews: "➕ News hinzufügen", createNewsBtn: "News erstellen",
+                adminShop: "🛍 Artikel erstellen", createShopBtn: "Artikel erstellen",
+                adminEvent: "⚡ Event erstellen", createEventBtn: "Event erstellen",
+                adminBanner: "📢 Banner verwalten", updateBannerBtn: "Aktualisieren"
+            },
+            it: {
+                feed: "📰 Home", shop: "🛍 Negozio", events: "⚡ Eventi", tops: "🏆 Top", profile: "👤 Profilo", admin: "⚙️ Admin",
+                newsTitle: "📰 Notizie", shopTitle: "🛍 Negozio di personalizzazione", eventsTitle: "⚡ Eventi attivi", topsTitle: "🏆 Classifica", profileTitle: "👤 Profilo e Impostazioni",
+                bannerDefault: "🔥 Hit della stagione: cornici e titoli unici sono nel negozio! Corri a prenderli! 🚀",
+                loadingNews: "Caricamento notizie... 🚀", loadingShop: "Caricamento oggetti... ✨", loadingEvents: "Caricamento eventi... ⚡", loadingCharts: "Caricamento classifiche... 🎶",
+                day: "☀️ Giorno", week: "⚡ Settimana", month: "🌙 Mese", all: "🌍 Tutto",
+                passportActive: "Il Passaporto Universe è attivo. ✨", titleLbl: "🏷 Titolo attivo:", frameLbl: "🖼 Cornice attiva:", achLbl: "🏆 Traguardi:", noVal: "Nessuno", noAch: "Ancora nessuno",
+                themeBtn: "🌙/☀️ Cambia tema", levelTxt: "Liv.",
+                adminNews: "➕ Aggiungi notizia", createNewsBtn: "Crea notizia",
+                adminShop: "🛍 Crea oggetto", createShopBtn: "Crea oggetto",
+                adminEvent: "⚡ Crea evento", createEventBtn: "Crea evento",
+                adminBanner: "📢 Gestisci banner", updateBannerBtn: "Aggiorna"
+            },
+            pt: {
+                feed: "📰 Início", shop: "🛍 Loja", events: "⚡ Eventos", tops: "🏆 Top", profile: "👤 Perfil", admin: "⚙️ Admin",
+                newsTitle: "📰 Feed de Notícias", shopTitle: "🛍 Loja de Customização", eventsTitle: "⚡ Eventos Ativos", topsTitle: "🏆 Placar", profileTitle: "👤 Perfil e Configurações",
+                bannerDefault: "🔥 Hit da temporada: Molduras e títulos exclusivos já estão na loja! Garanta o seu! 🚀",
+                loadingNews: "Carregando notícias... 🚀", loadingShop: "Carregando itens... ✨", loadingEvents: "Carregando eventos... ⚡", loadingCharts: "Carregando gráficos... 🎶",
+                day: "☀️ Dia", week: "⚡ Semana", month: "🌙 Mês", all: "🌍 Tudo",
+                passportActive: "O Passaporte Universe está ativo. ✨", titleLbl: "🏷 Título ativo:", frameLbl: "🖼 Moldura ativa:", achLbl: "🏆 Conquistas:", noVal: "Nenhum", noAch: "Nenhuma ainda",
+                themeBtn: "🌙/☀️ Mudar tema", levelTxt: "Nível",
+                adminNews: "➕ Adicionar notícia", createNewsBtn: "Criar Notícia",
+                adminShop: "🛍 Criar Item", createShopBtn: "Criar Item",
+                adminEvent: "⚡ Criar Evento", createEventBtn: "Criar Evento",
+                adminBanner: "📢 Gerenciar Banner", updateBannerBtn: "Atualizar"
+            },
+            'pt-br': {
+                feed: "📰 Início", shop: "🛍 Lojinha", events: "⚡ Eventos", tops: "🏆 Top", profile: "👤 Perfil", admin: "⚙️ Admin",
+                newsTitle: "📰 Feed de Notícias", shopTitle: "🛍 Lojinha de Customização", eventsTitle: "⚡ Eventos Ativos", topsTitle: "🏆 Placar de Líderes", profileTitle: "👤 Perfil e Configurações",
+                bannerDefault: "🔥 Hit da temporada: Molduras e títulos exclusivos já tão na lojinha! Corre lá! 🚀",
+                loadingNews: "Carregando notícias... 🚀", loadingShop: "Carregando itens... ✨", loadingEvents: "Carregando eventos... ⚡", loadingCharts: "Carregando placar... 🎶",
+                day: "☀️ Dia", week: "⚡ Semana", month: "🌙 Mês", all: "🌍 Tudo",
+                passportActive: "Passaporte Universe tá ativado. ✨", titleLbl: "🏷 Título ativo:", frameLbl: "🖼 Moldura ativa:", achLbl: "🏆 Conquistas:", noVal: "Nenhum", noAch: "Nenhuma ainda",
+                themeBtn: "🌙/☀️ Trocar tema", levelTxt: "Nível",
+                adminNews: "➕ Adicionar Notícia", createNewsBtn: "Criar Notícia",
+                adminShop: "🛍 Criar Item", createShopBtn: "Criar Item",
+                adminEvent: "⚡ Criar Evento", createEventBtn: "Criar Evento",
+                adminBanner: "📢 Gerenciar Banner", updateBannerBtn: "Atualizar"
+            },
+            ro: {
+                feed: "📰 Acasă", shop: "🛍 Magazin", events: "⚡ Evenimente", tops: "🏆 Top", profile: "👤 Profil", admin: "⚙️ Admin",
+                newsTitle: "📰 Flux de știri", shopTitle: "🛍 Magazin de personalizare", eventsTitle: "⚡ Evenimente active", topsTitle: "🏆 Clasament", profileTitle: "👤 Profil și Setări",
+                bannerDefault: "🔥 Hitul sezonului: Cadrele și titlurile unice sunt în magazin! Ia-le acum! 🚀",
+                loadingNews: "Se încarcă știrile... 🚀", loadingShop: "Se încarcă produsele... ✨", loadingEvents: "Se încarcă evenimentele... ⚡", loadingCharts: "Se încarcă topurile... 🎶",
+                day: "☀️ Zi", week: "⚡ Săptămână", month: "🌙 Lună", all: "🌍 Tot",
+                passportActive: "Pașaportul Universe este activ. ✨", titleLbl: "🏷 Titlu activ:", frameLbl: "🖼 Cadru activ:", achLbl: "🏆 Realizări:", noVal: "Niciunul", noAch: "Niciuna încă",
+                themeBtn: "🌙/☀️ Schimbă tema", levelTxt: "Niv.",
+                adminNews: "➕ Adaugă știre", createNewsBtn: "Creează știre",
+                adminShop: "🛍 Creează produs", createShopBtn: "Creează produs",
+                adminEvent: "⚡ Creează eveniment", createEventBtn: "Creează eveniment",
+                adminBanner: "📢 Administrare banner", updateBannerBtn: "Actualizează"
+            }
+        };
+
+        const rawLang = tg.initDataUnsafe?.user?.language_code || 'ru';
+        const userLang = i18n[rawLang] ? rawLang : 'ru';
+
+        function applyLocalization() {
+            const l = i18n[userLang];
+            
+            document.getElementById('tabFeed').innerText = l.feed;
+            document.getElementById('tabShop').innerText = l.shop;
+            document.getElementById('tabEvents').innerText = l.events;
+            document.getElementById('tabTops').innerText = l.tops;
+            document.getElementById('tabProfile').innerText = l.profile;
+
+            document.getElementById('hNews').innerText = l.newsTitle;
+            document.getElementById('hShop').innerText = l.shopTitle;
+            document.getElementById('hEvents').innerText = l.eventsTitle;
+            document.getElementById('hTops').innerText = l.topsTitle;
+            document.getElementById('hProfile').innerText = l.profileTitle;
+
+            // Если баннер еще не загрузился с бэка, ставим локализованный дефолтный текст
+            const bannerEl = document.getElementById('bannerContainer');
+            if (!bannerEl.dataset.custom) {
+                bannerEl.innerText = l.bannerDefault;
+            }
+
+            document.getElementById('loadingNews').innerText = l.loadingNews;
+            document.getElementById('loadingShop').innerText = l.loadingShop;
+            document.getElementById('loadingEvents').innerText = l.loadingEvents;
+            document.getElementById('loadingCharts').innerText = l.loadingCharts;
+
+            document.getElementById('btnDay').innerText = l.day;
+            document.getElementById('btnWeek').innerText = l.week;
+            document.getElementById('btnMonth').innerText = l.month;
+            document.getElementById('btnAll').innerText = l.all;
+
+            document.getElementById('profileActiveText').innerText = l.passportActive;
+            document.getElementById('titleLabel').innerText = l.titleLbl;
+            document.getElementById('frameLabel').innerText = l.frameLbl;
+            document.getElementById('achLabel').innerText = l.achLbl;
+            document.getElementById('themeBtn').innerText = l.themeBtn;
+            document.getElementById('levelText').innerText = l.levelTxt;
+
+            if (document.getElementById('hAdmin')) {
+                document.getElementById('hAdmin').innerText = l.admin;
+                document.getElementById('adminAddNewsTitle').innerText = l.adminNews;
+                document.getElementById('adminCreateNewsBtn').innerText = l.createNewsBtn;
+                document.getElementById('adminShopTitle').innerText = l.adminShop;
+                document.getElementById('adminCreateShopBtn').innerText = l.createShopBtn;
+                document.getElementById('adminEventTitle').innerText = l.adminEvent;
+                document.getElementById('adminCreateEventBtn').innerText = l.createEventBtn;
+                document.getElementById('adminBannerTitle').innerText = l.adminBanner;
+                document.getElementById('adminUpdateBannerBtn').innerText = l.updateBannerBtn;
+            }
+        }
 
         async function initUser() {
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -223,86 +616,67 @@
                 }
             }
 
+            applyLocalization();
+            loadBanner(); // Загружаем актуальный баннер с сервера
+
             if (currentUserId === ADMIN_ID) {
                 let dock = document.getElementById('dockMenu');
                 let adminBtn = document.createElement('button');
-                adminBtn.innerText = "⚙️ Админ";
-                adminBtn.onclick = function() { switchTab('admin', this); loadAdminBanners(); };
+                adminBtn.innerText = i18n[userLang].admin;
+                adminBtn.id = "tabAdmin";
+                adminBtn.onclick = function() { switchTab('admin', this); };
                 dock.appendChild(adminBtn);
             }
 
             await refreshUserData();
-            loadBanners();
             loadNews();
         }
         initUser();
+
+        async function loadBanner() {
+            try {
+                let resp = await fetch(`${API_URL}/api/banner`);
+                let data = await resp.json();
+                if (data && data.text) {
+                    let bannerEl = document.getElementById('bannerContainer');
+                    bannerEl.dataset.custom = "true";
+                    if (data.link) {
+                        bannerEl.innerHTML = `<a href="${data.link}" target="_blank" style="color: inherit; text-decoration: none;">${data.text} 🔗</a>`;
+                    } else {
+                        bannerEl.innerText = data.text;
+                    }
+                }
+            } catch(e) {}
+        }
+
+        async function updateBanner() {
+            const text = document.getElementById('bannerTextInput').value;
+            const link = document.getElementById('bannerLinkInput').value;
+            if (!text) return alert('Введи текст баннера!');
+            
+            await fetch(`${API_URL}/api/banner/update`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ text, link })
+            });
+            alert('Баннер успешно обновлен!');
+            document.getElementById('bannerTextInput').value = '';
+            document.getElementById('bannerLinkInput').value = '';
+            loadBanner();
+        }
 
         async function refreshUserData() {
             try {
                 let resp = await fetch(`${API_URL}/api/user-data?userId=${currentUserId}`);
                 let data = await resp.json();
+                let l = i18n[userLang];
                 document.getElementById('userBalance').innerText = data.points || 0;
                 document.getElementById('userSeasonCurrency').innerText = data.season_currency || 0;
                 document.getElementById('userLevel').innerText = data.level || 1;
-                document.getElementById('profileTitleVal').innerText = data.activeTitle || 'Нет';
-                document.getElementById('profileFrameVal').innerText = data.activeFrame || 'Нет';
-                document.getElementById('profileAchVal').innerText = data.achievements?.length ? data.achievements.join(', ') : 'Пока нет';
+                document.getElementById('profileTitleVal').innerText = data.activeTitle || l.noVal;
+                document.getElementById('profileFrameVal').innerText = data.activeFrame || l.noVal;
+                document.getElementById('profileAchVal').innerText = data.achievements?.length ? data.achievements.join(', ') : l.noAch;
             } catch(e) {}
-        }
-
-        // --- Логика WB-слайдера с автолистанием ---
-        async function loadBanners() {
-            try {
-                let resp = await fetch(`${API_URL}/api/banners`);
-                let banners = await resp.json();
-                let wrapper = document.getElementById('bannerWrapper');
-                if (!banners.length) {
-                    wrapper.innerHTML = `<div class="banner-slide" style="background: var(--accent-gradient); display:flex; align-items:center; justify-content:center; color:white; font-weight:bold;">Добавь баннеры в админке! 🚀</div>`;
-                    return;
-                }
-                wrapper.innerHTML = '';
-                banners.forEach(b => {
-                    wrapper.innerHTML += `<div class="banner-slide" style="background-image: url('${b.imageUrl}')"></div>`;
-                });
-
-                if (slideInterval) clearInterval(slideInterval);
-                slideInterval = setInterval(() => {
-                    currentSlide = (currentSlide + 1) % banners.length;
-                    wrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
-                }, 5000);
-            } catch(e) {}
-        }
-
-        async function addBanner() {
-            let imgUrl = document.getElementById('banImg').value;
-            if (!imgUrl) return alert('Вставь ссылку на картинку баннера!');
-            const data = { id: 'b_' + Date.now(), imageUrl: imgUrl };
-            await fetch(`${API_URL}/api/banners/add`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
-            alert('Баннер успешно добавлен!');
-            document.getElementById('banImg').value = '';
-            loadBanners();
-            loadAdminBanners();
-        }
-
-        async function loadAdminBanners() {
-            let resp = await fetch(`${API_URL}/api/banners`);
-            let banners = await resp.json();
-            let c = document.getElementById('adminBannersContainer');
-            c.innerHTML = banners.length ? '' : 'Нет баннеров.';
-            banners.forEach(b => {
-                c.innerHTML += `
-                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; background:rgba(255,255,255,0.05); padding:6px; border-radius:8px;">
-                        <img src="${b.imageUrl}" style="width:60px; height:30px; object-fit:cover; border-radius:4px;">
-                        <button onclick="deleteBanner('${b.id}')" style="background:#da3633; color:white; padding:4px 8px; font-size:12px;">Удалить</button>
-                    </div>`;
-            });
-        }
-
-        async function deleteBanner(id) {
-            if (!confirm('Удалить этот баннер?')) return;
-            await fetch(`${API_URL}/api/banners/delete?id=${id}`, { method: 'DELETE' });
-            loadBanners();
-            loadAdminBanners();
         }
 
         function switchTab(tabId, btn) {
@@ -321,7 +695,8 @@
             let resp = await fetch(`${API_URL}/api/news`);
             let news = await resp.json();
             let c = document.getElementById('newsContainer');
-            c.innerHTML = news.length ? '' : '<div class="card">Нет новостей.</div>';
+            c.innerHTML = news.length ? '' : `<div class="card">${i18n[userLang].noVal === 'Нет' ? 'Нет новостей.' : 'No news.'}</div>`;
+            
             news.forEach(n => {
                 let deleteBtn = (currentUserId === ADMIN_ID) ? `<button onclick="deleteNews('${n.newsId}')" style="background:#da3633; color:white; margin-top:8px; width:100%;">🗑 Удалить новость</button>` : '';
                 c.innerHTML += `<div class="card"><h4>${n.title}</h4><p>${n.text}</p>${n.mediaUrl ? `<img src="${n.mediaUrl}" style="width:100%; border-radius:8px; margin-top:8px;">` : ''}${deleteBtn}</div>`;
@@ -331,6 +706,7 @@
         async function deleteNews(newsId) {
             if (!confirm('Точно удалить эту новость?')) return;
             await fetch(`${API_URL}/api/news/delete?newsId=${newsId}`, { method: 'DELETE' });
+            alert('Новость удалена!');
             loadNews();
         }
 
@@ -339,6 +715,7 @@
             let items = await resp.json();
             let c = document.getElementById('shopContainer');
             c.innerHTML = items.length ? '' : '<div class="card">Магазин пуст.</div>';
+            
             items.forEach(i => {
                 let currencySign = i.currency === 'season' ? '🥥' : (i.currency === 'free' ? '🎁 Бесплатно' : '🌟');
                 let priceText = i.currency === 'free' ? '' : `Цена: ${i.price} ${currencySign}`;
@@ -368,7 +745,7 @@
             });
             let result = await resp.json();
             if (result.success) {
-                alert('🎉 Успешная покупка!');
+                alert('🎉 Успешная покупка! Предмет добавлен в инвентарь.');
                 refreshUserData();
             } else {
                 alert('❌ Ошибка: ' + (result.error || 'Не удалось купить'));
@@ -376,8 +753,9 @@
         }
 
         async function deleteShopItem(itemId) {
-            if (!confirm('Точно удалить этот товар?')) return;
+            if (!confirm('Точно удалить этот товар из магазина?')) return;
             await fetch(`${API_URL}/api/shop/delete?itemId=${itemId}`, { method: 'DELETE' });
+            alert('Товар удален!');
             loadShop();
         }
 
@@ -411,7 +789,7 @@
             };
             if (!data.title || !data.text) return alert('Заполни заголовок и текст!');
             await fetch(`${API_URL}/api/news/add`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
-            alert('Новость добавлена!');
+            alert('Новость успешно добавлена!');
             document.getElementById('newsTitle').value = ''; document.getElementById('newsText').value = ''; document.getElementById('newsMedia').value = '';
             loadNews();
         }
@@ -421,14 +799,12 @@
             const data = {
                 itemId: 'item_' + Date.now(),
                 name: document.getElementById('shopName').value,
-                price: currencyVal === 'free' ? 0 : Number(document.ind('shopPrice').value),
+                price: currencyVal === 'free' ? 0 : Number(document.getElementById('shopPrice').value),
                 currency: currencyVal,
                 type: document.getElementById('shopType').value,
                 accessType: document.getElementById('shopAccess').value,
                 image: document.getElementById('shopImage').value || null
             };
-            // Небольшая поправка для безошибочного считывания цены
-            data.price = currencyVal === 'free' ? 0 : Number(document.getElementById('shopPrice').value);
             if (!data.name) return alert('Заполни название товара!');
             await fetch(`${API_URL}/api/shop/add`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
             alert('Товар создан!');
@@ -441,7 +817,7 @@
                 title: document.getElementById('eventTitle').value,
                 description: document.getElementById('eventDesc').value,
                 rewardValue: document.getElementById('eventReward').value,
-                coverUrl: document.getElementById('eventCover').value
+.                coverUrl: document.getElementById('eventCover').value
             };
             if (!data.title) return alert('Заполни название!');
             await fetch(`${API_URL}/api/events/add`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
