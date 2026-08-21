@@ -7,6 +7,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// --- ВСТАВЛЯЕМ СЮДА ---
+app.get('/api/user-data', async (req, res) => {
+    try {
+        const user = await User.findOne({ userId: req.query.userId });
+        res.json(user || { points: 0, level: 1 });
+    } catch (e) {
+        res.status(500).json({ error: "Ошибка при получении данных профиля" });
+    }
+});
+// ----------------------
+
+
 // Эндпоинт, который забирает данные из MongoDB и отдает топы
 app.get('/api/top', async (req, res) => {
     try {
