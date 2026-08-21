@@ -109,4 +109,11 @@ async function trackMessage(userId, username, chatId) {
     return user;
 }
 
+const ChatSchema = new mongoose.Schema({
+    chatId: { type: String, required: true, unique: true },
+    linkedChannel: { type: String, default: null }
+});
+const ChatModel = mongoose.model('ChatSettings', ChatSchema);
+
+
 module.exports = { trackMessage, User, ShopItem, News, Event, getCurrentSeasonCurrencySymbol };
