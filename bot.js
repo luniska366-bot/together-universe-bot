@@ -317,8 +317,15 @@ bot.on('chat_join_request', async (ctx) => {
     try {
         await ctx.approveChatJoinRequest();
         const userId = ctx.from.id;
-        await ctx.telegram.sendMessage(userId, `👋 Добро пожаловать! Чтобы получить доступ к чату, подпишитесь на наш ТГК и напишите /start сюда!`);
+        await ctx.telegram.sendMessage(userId, `👋 Привет! Твоя заявка в чат принята. Чтобы писать в чате, подпишись на наш главный ТГК: t.me/togetheruniversechats и нажми /start в ЛС с ботом!`);
     } catch (e) {}
+});
+
+// Команда для привязки канала к чату (пиши в чате: /setchannel @юзернейм_канала)
+bot.hears(/^\/setchannel\s+(@\w+)/i, async (ctx) => {
+    const channel = ctx.match[1];
+    await ChatModel.findOneAndUpdate({ chatId: String(ctx.chat.id) }, { linkedChannel: channel }, { upsert: true });
+    ctx.reply(`✅ Канал ${channel} успешно привязан к этому чату для прохождения капчи! (Не забудьте выдать боту права админа в этом канале)`);
 });
 
 bot.on('chat_member', async (ctx) => {
@@ -338,8 +345,12 @@ bot.on('chat_member', async (ctx) => {
             await ctx.telegram.restrictChatMember(ctx.chat.id, userId, { permissions: { can_send_messages: false } });
         } catch (e) {}
 
-        ctx.reply(`Привет, ${newMember.user.first_name}! 💖 Нажми кнопку ниже, чтобы пройти капчу и писать в чат!`, {
-            reply_markup: { inline_keyboard: [[{ text: "🐈 Я человек (Пройти капчу)", callback_data: `verify_${userId}` }]] }
+        ctx.reply(`Привет, ${newMember.user.first_name}! 💖\n\nЧтобы получить доступ к общению, выполни шаги:\n1️⃣ Подпишись на главный ТГК: t.me/togetheruniversechats\n2️⃣ Подпишись на канал чата (если задан)\n3️⃣ Напиши мне в ЛС команду /start\n4️⃣ Нажми кнопку ниже!`, {
+            reply_markup: { inline_keyboard: [
+                [{ text: "📢 Наш главный ТГК", url: "https://t.me/togetheruniversechats" }],
+                [{ text: "✍️ Написать боту в ЛС", url: `https://t.me/${ctx.botInfo.username}?start=verify` }],
+                [{ text: "✅ Я всё выполнил (Проверить)", callback_data: `verify_${userId}` }]
+            ]}
         });
     }
 });
@@ -347,6 +358,28 @@ bot.on('chat_member', async (ctx) => {
 bot.action(/^verify_(\d+)$/, async (ctx) => {
     const targetId = parseInt(ctx.match[1]);
     if (ctx.from.id !== targetId) return ctx.answerCbQuery("Эта кнопка не для тебя! ✨", { show_alert: true });
+
+    const chatId = String(ctx.chat.id);
+    const chatSettings = await ChatModel.findOne({ chatId });
+    const MAIN_CHANNEL = "@togetheruniversechats";
+
+    try {
+        // Проверка подписки на главный канал
+        const mainMember = await ctx.telegram.getChatMember(MAIN_CHANNEL, targetId);
+        if (['left', 'kicked'].includes(mainMember.status)) {
+            return ctx.answerCbQuery(`❌ Сначала подпишитесь на наш главный канал t.me/togetheruniversechats!`, { show_alert: true });
+        }
+
+        // Проверка подписки на канал чата (если администратор его привязал через /setchannel)
+        if (chatSettings && chatSettings.linkedChannel) {
+            const chatMember = await ctx.telegram.getChatMember(chatSettings.linkedChannel, targetId);
+            if (['left', 'kicked'].includes(chatMember.status)) {
+                return ctx.answerCbQuery(`❌ Сначала подпишитесь на канал чата ${chatSettings.linkedChannel}!`, { show_alert: true });
+            }
+        }
+    } catch (e) {
+        return ctx.answerCbQuery("❌ Ошибка проверки. Убедитесь, что бот - администратор в каналах!", { show_alert: true });
+    }
 
     try {
         await ctx.telegram.restrictChatMember(ctx.chat.id, targetId, {
@@ -397,6 +430,7 @@ bot.on('text', async (ctx, next) => {
     }
     return next();
 });
+
 
 app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
     bot.handleUpdate(req.body, res);
