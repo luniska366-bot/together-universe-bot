@@ -2,17 +2,21 @@ const { Telegraf, Markup } = require('telegraf');
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const { User, ShopItem, News, Event, Banner } = require('./db');
+const { User, ShopItem, News, Event, Banner, ChatModel } = require('./db');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const BOT_TOKEN = process.env.BOT_TOKEN || "8708472061:AAGsyYm8RhgDlqpyeEiGwYlbnXFZwKdTI2M";
+const BOT_TOKEN = "8708472061:AAGsyYm8RhgDlqpyeEiGwYlbnXFZwKdTI2M";
 const bot = new Telegraf(BOT_TOKEN);
 const MINI_APP_URL = "https://luniska366-bot.github.io/together-universe-bot/";
 
-// Функция трекинга сообщений (если её не было в db.js, определяем здесь)
+// Твоя строка подключения к базе данных (теперь она всегда на месте!)
+const MONGO_URI = "mongodb+srv://luniska366:Makar2010@cluster0.mongodb.net/?retryWrites=true&w=majority"; 
+// ^ Если у тебя другая строка от Atlas, просто замени текст выше на свою в кавычках.
+
+// Функция трекинга сообщений
 async function trackMessage(userId, username, chatId) {
     let user = await User.findOne({ userId });
     if (!user) {
@@ -148,7 +152,41 @@ app.get('/api/top', async (req, res) => {
     }
 });
 
-// --- ДОСТИЖЕНИЯ ---
+// БАННЕРЫ API
+app.get('/api/banners', async (req, res) => {
+    try {
+        const banners = await Banner.find({});
+        res.json(banners);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/banners/add', async (req, res) => {
+    try {
+        const { id, imageUrl, link } = req.body;
+        await Banner.create({ id, imageUrl, link });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/banners/delete', async (req, res) => {
+    try {
+        const { id } = req.query;
+        await Banner.deleteOne({ id });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/news/delete', async (req, res) => {
+    try {
+        const { newsId } = req.query;
+        await News.deleteOne({ newsId });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- СИСТЕМА ДОСТИЖЕНИЙ ---
 const ACHIEVEMENTS_DEF = [
     { id: 'novice', name: 'Новичок Юниверс', count: 1 },
     { id: 'advanced', name: 'Продвинутый Юниверс', count: 100 },
@@ -188,7 +226,7 @@ async function notifyAchievement(user, achName, chatId, botInstance) {
     }
 }
 
-// --- КОМАНДЫ БОТА ---
+// --- ТЕКСТОВЫЕ КОМАНДЫ ---
 
 bot.hears(/^калл(?:\s+(.+))?/i, async (ctx) => {
     if (ctx.chat.type === 'private') return ctx.reply('Эта команда работает только в чатах!');
@@ -210,7 +248,7 @@ bot.hears(/^калл(?:\s+(.+))?/i, async (ctx) => {
             await ctx.reply('В этом чате пока никто не написал ни одного сообщения!');
         }
     } catch (e) {
-        console.error("ТОЧНАЯ ОШИБКА КАЛЛА:", e);
+        console.error("ОШИБКА КАЛЛА:", e);
     }
 });
 
@@ -311,59 +349,16 @@ bot.on('text', async (ctx, next) => {
     return next();
 });
 
-app.delete('/api/news/delete', async (req, res) => {
-    try {
-        const { newsId } = req.query;
-        await News.deleteOne({ newsId });
-        res.json({ success: true });
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
-});
-
-app.delete('/api/shop/delete', async (req, res) => {
-    try {
-        const { itemId } = req.query;
-        await ShopItem.deleteOne({ itemId });
-        res.json({ success: true });
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
-});
-
-app.get('/api/banners', async (req, res) => {
-    try {
-        const banners = await Banner.find({});
-        res.json(banners);
-    } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.post('/api/banners/add', async (req, res) => {
-    try {
-        const { id, imageUrl, link } = req.body;
-        await Banner.create({ id, imageUrl, link });
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.delete('/api/banners/delete', async (req, res) => {
-    try {
-        const { id } = req.query;
-        await Banner.deleteOne({ id });
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
 app.post(`/bot${BOT_TOKEN}`, (req, res) => {
     bot.handleUpdate(req.body, res);
 });
 
 const PORT = process.env.PORT || 10000;
 
-// ЗАПУСК С ПОДКЛЮЧЕНИЕМ К БАЗЕ ДАННЫХ
+// ИНИЦИАЛИЗАЦИЯ И СТАРТ СЕРВЕРА
 async function startServer() {
     try {
-        await mongoose.connect(process.env.MONGO_URI);
+        await mongoose.connect(MONGO_URI);
         console.log("Успешно подключились к MongoDB!");
 
         app.listen(PORT, '0.0.0.0', async () => {
