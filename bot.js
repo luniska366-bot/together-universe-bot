@@ -61,10 +61,7 @@ app.get('/api/top', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Сервер и API запущены на порту ${PORT}!`);
-});
+
 
 const bot = new Telegraf("8708472061:AAGsyYm8RhgDlqpyeEiGwYlbnXFZwKdTI2M");
 const MINI_APP_URL = "https://luniska366-bot.github.io/together-universe-bot/";
