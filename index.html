@@ -50,7 +50,6 @@
         }
         .avatar img { width: 100%; height: 100%; object-fit: cover; }
         
-        /* Баннер маркетплейса */
         .banner {
             background: var(--accent-gradient);
             color: white; padding: 15px; border-radius: 14px;
@@ -66,13 +65,13 @@
         
         .glass-dock {
             position: fixed !important; bottom: 15px !important; left: 50% !important;
-            transform: translateX(-50%) !important; display: flex !important; gap: 4px;
+            transform: translateX(-50%) !important; display: flex !important; gap: 2px;
             background: rgba(22, 27, 34, 0.85) !important; backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.15); padding: 8px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.15); padding: 6px 8px;
             border-radius: 20px; z-index: 999999 !important; width: max-content;
         }
         [data-theme="light"] .glass-dock { background: rgba(255, 255, 255, 0.85) !important; }
-        .glass-dock button { background: transparent !important; border: none !important; color: var(--text-color) !important; padding: 8px 12px; border-radius: 12px; font-size: 13px; }
+        .glass-dock button { background: transparent !important; border: none !important; color: var(--text-color) !important; padding: 6px 10px; border-radius: 12px; font-size: 12px; }
         .glass-dock button.active { background: var(--accent) !important; color: white !important; }
 
         .section { display: none; background: var(--card-bg); padding: 18px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 15px; }
@@ -94,7 +93,7 @@
         </div>
     </div>
 
-    <!-- Баннер маркетплейса в магазине / на главной -->
+    <!-- Баннер маркетплейса -->
     <div class="banner">
         🔥 Хит сезона: Уникальные рамки и титулы уже в магазине! Залетай и забирай! 🚀
     </div>
@@ -129,7 +128,7 @@
         <div id="topsContainer"><div class="card">Загрузка чартов... 🎶</div></div>
     </div>
 
-    <!-- Профиль (Рамки, титулы, достижения) -->
+    <!-- Профиль -->
     <div id="profile" class="section">
         <h3 style="margin-top: 0;">👤 Профиль и Настройки</h3>
         <div class="card">
@@ -143,12 +142,59 @@
         </div>
     </div>
 
+    <!-- Панель Администратора -->
+    <div id="admin" class="section">
+        <h3 style="margin-top: 0;">⚙️ Панель Администратора</h3>
+        
+        <div class="card">
+            <h4>➕ Добавить Новость</h4>
+            <input type="text" id="newsTitle" placeholder="Заголовок" style="width: 90%; margin-bottom: 8px;"><br>
+            <input type="text" id="newsText" placeholder="Текст новости" style="width: 90%; margin-bottom: 8px;"><br>
+            <input type="text" id="newsMedia" placeholder="URL картинки/видео (необязательно)" style="width: 90%; margin-bottom: 8px;"><br>
+            <button onclick="addNews()" style="background: var(--accent-gradient); color: white; width: 100%;">Создать новость</button>
+        </div>
+
+        <div class="card">
+            <h4>🛍 Создать Товар в Магазине</h4>
+            <input type="text" id="shopName" placeholder="Название товара" style="width: 90%; margin-bottom: 8px;"><br>
+            <input type="number" id="shopPrice" placeholder="Цена (цифра)" style="width: 90%; margin-bottom: 8px;"><br>
+            <select id="shopCurrency" style="width: 96%; margin-bottom: 8px;">
+                <option value="stars">Звезды 🌟</option>
+                <option value="season">Сезонная валюта ❄️/🌸/...</option>
+            </select><br>
+            <select id="shopType" style="width: 96%; margin-bottom: 8px;">
+                <option value="title">Титул</option>
+                <option value="frame">Рамка</option>
+                <option value="achievement">Достижение</option>
+                <option value="merch">Мерч</option>
+            </select><br>
+            <select id="shopAccess" style="width: 96%; margin-bottom: 8px;">
+                <option value="permanent">Постоянный</option>
+                <option value="temporary">Временный</option>
+                <option value="limited">Лимитированный</option>
+            </select><br>
+            <input type="text" id="shopImage" placeholder="URL картинки товара" style="width: 90%; margin-bottom: 8px;"><br>
+            <button onclick="addShopItem()" style="background: var(--accent-gradient); color: white; width: 100%;">Создать товар</button>
+        </div>
+
+        <div class="card">
+            <h4>⚡ Создать Ивент</h4>
+            <input type="text" id="eventTitle" placeholder="Название ивента" style="width: 90%; margin-bottom: 8px;"><br>
+            <input type="text" id="eventDesc" placeholder="Описание и что делать" style="width: 90%; margin-bottom: 8px;"><br>
+            <input type="text" id="eventReward" placeholder="Награда (например: Титул 'Герой')" style="width: 90%; margin-bottom: 8px;"><br>
+            <input type="text" id="eventCover" placeholder="URL обложки" style="width: 90%; margin-bottom: 8px;"><br>
+            <button onclick="addEvent()" style="background: var(--accent-gradient); color: white; width: 100%;">Создать ивент</button>
+        </div>
+    </div>
+
+    <!-- Нижняя панель навигации -->
     <div class="glass-dock">
         <button class="active" onclick="switchTab('feed', this); loadNews();">📰 Главная</button>
         <button onclick="switchTab('shop', this); loadShop();">🛍 Магазин</button>
         <button onclick="switchTab('events', this); loadEvents();">⚡ Ивенты</button>
         <button onclick="switchTab('tops', this); loadLeaderboard('all');">🏆 Топы</button>
         <button onclick="switchTab('profile', this)">👤 Профиль</button>
+        <button onclick="switchTab('admin', this)">⚙️ Админ</button>
     </div>
 
     <script>
@@ -230,6 +276,53 @@
             leaders.forEach((u, i) => {
                 c.innerHTML += `<div class="card" style="display:flex; justify-content:space-between;"><span>${i+1}. @${u.username}</span><span>💬 ${u.message_count}</span></div>`;
             });
+        }
+
+        // --- Функции отправки данных из Админки ---
+        async function addNews() {
+            const data = {
+                newsId: 'news_' + Date.now(),
+                title: document.getElementById('newsTitle').value,
+                text: document.getElementById('newsText').value,
+                mediaUrl: document.getElementById('newsMedia').value || null
+            };
+            if (!data.title || !data.text) return alert('Заполни заголовок и текст!');
+            await fetch(`${API_URL}/api/news/add`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+            alert('Новость успешно добавлена!');
+            document.getElementById('newsTitle').value = ''; document.getElementById('newsText').value = ''; document.getElementById('newsMedia').value = '';
+            loadNews();
+        }
+
+        async function addShopItem() {
+            const data = {
+                itemId: 'item_' + Date.now(),
+                name: document.getElementById('shopName').value,
+                price: document.getElementById('shopPrice').value,
+                currency: document.getElementById('shopCurrency').value,
+                type: document.getElementById('shopType').value,
+                accessType: document.getElementById('shopAccess').value,
+                image: document.getElementById('shopImage').value
+            };
+            if (!data.name || !data.price) return alert('Заполни название и цену!');
+            await fetch(`${API_URL}/api/shop/add`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+            alert('Товар успешно создан в магазине!');
+            document.getElementById('shopName').value = ''; document.getElementById('shopPrice').value = ''; document.getElementById('shopImage').value = '';
+            loadShop();
+        }
+
+        async function addEvent() {
+            const data = {
+                eventId: 'event_' + Date.now(),
+                title: document.getElementById('eventTitle').value,
+                description: document.getElementById('eventDesc').value,
+                rewardValue: document.getElementById('eventReward').value,
+                coverUrl: document.getElementById('eventCover').value
+            };
+            if (!data.title) return alert('Заполни название ивента!');
+            await fetch(`${API_URL}/api/events/add`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+            alert('Ивент успешно создан!');
+            document.getElementById('eventTitle').value = ''; document.getElementById('eventDesc').value = ''; document.getElementById('eventReward').value = ''; document.getElementById('eventCover').value = '';
+            loadEvents();
         }
     </script>
 </body>
