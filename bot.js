@@ -182,7 +182,7 @@ async function notifyAchievement(user, achName, chatId, botInstance) {
 
 // --- ТЕКСТОВЫЕ КОМАНДЫ И КАЛЛ (ЗАЗЫВАЛА) ---
 
-// Отладочная функция КАЛЛ
+// Финальный исправленный КАЛЛ без падений разметки
 bot.hears(/^калл(?:\s+(.+))?/i, async (ctx) => {
     if (ctx.chat.type === 'private') return ctx.reply('Эта команда работает только в чатах!');
     const callText = ctx.match[1] || 'Внимание всем!';
@@ -199,12 +199,12 @@ bot.hears(/^калл(?:\s+(.+))?/i, async (ctx) => {
         });
 
         if (tags.trim()) {
-            await ctx.reply(`📢 *КАЛЛ*: ${callText}\n\n${tags}`, { parse_mode: 'Markdown' });
+            // Отправляем без parse_mode, чтобы спецсимволы в именах не ломали сообщение
+            await ctx.reply(`📢 КАЛЛ: ${callText}\n\n${tags}`);
         } else {
             await ctx.reply('В этом чате пока никто не написал ни одного сообщения, некого тегать!');
         }
     } catch (e) {
-        // Выводим реальную ошибку в консоль Render, чтобы понять причину
         console.error("ТОЧНАЯ ОШИБКА КАЛЛА:", e);
         await ctx.reply(`Ошибка калла: ${e.message}`);
     }
@@ -214,6 +214,7 @@ bot.hears(/^\/callall(?:\s+(.+))?/i, async (ctx) => {
     ctx.message.text = ctx.message.text.replace('/callall', 'калл');
     return bot.handleUpdate(ctx.update);
 });
+
 
 
 
