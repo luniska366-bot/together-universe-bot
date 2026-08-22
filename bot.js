@@ -1,7 +1,7 @@
 const { Telegraf, Markup } = require('telegraf');
 const express = require('express');
 const cors = require('cors');
-const { User, ShopItem, News, Event, trackMessage } = require('./db');
+const { User, ShopItem, News, Event, Banner, trackMessage } = require('./db');
 
 const app = express();
 app.use(cors());
