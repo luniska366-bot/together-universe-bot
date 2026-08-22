@@ -656,27 +656,44 @@ bot.command('import_msg', async (ctx) => {
 // Обработка новых участников в чате
 bot.on('new_chat_members', async (ctx) => {
     try {
-        // Удаляем системное сообщение о входе, чтобы чат был чище
         await ctx.deleteMessage().catch(() => {});
 
+        const chatId = String(ctx.chat.id);
+        
+        // Ищем кастомный инфо-канал для этого чата в базе данных
+        let chatSettings = null;
+        try {
+            chatSettings = await ChatSettings.findOne({ chatId: chatId });
+        } catch (err) {
+            console.error("Ошибка чтения настроек чата:", err);
+        }
+
+        // Формируем клавиатуру для приветствия
+        const inlineKeyboard = [
+            [ { text: '📢 Подписаться на основной канал', url: 'https://t.me/togetheruniversechats' } ]
+        ];
+
+        // Если для этого чата задан свой инфо-канал, добавляем его второй кнопкой!
+        if (chatSettings && chatSettings.infoChannel) {
+            inlineKeyboard.push([ { text: '📌 Инфо этого чата', url: chatSettings.infoChannel } ]);
+        }
+
+        // Кнопка подтверждения подписки
         for (let member of ctx.message.new_chat_members) {
-            // Игнорируем самого бота
             if (member.id === ctx.botInfo.id) continue;
 
             const userId = member.id;
             const name = member.first_name || 'Новичок';
 
-            // Отправляем приветствие с кнопкой проверки подписки
-            let welcomeMsg = await ctx.reply(
+            inlineKeyboard.push([ { text: '✅ Я подписался', callback_data: `check_sub_${userId}` } ]);
+
+            await ctx.reply(
                 `👋 Привет, [${name}](tg://user?id=${userId})!\n\n` +
                 `💡 Для отправки сообщений в этом чате необходимо подписаться на наш канал.`,
                 {
                     parse_mode: 'Markdown',
                     reply_markup: {
-                        inline_keyboard: [
-                            [ { text: '📢 Подписаться на канал', url: 'https://t.me/togetheruniversechats' } ],
-                            [ { text: '✅ Я подписался', callback_data: `check_sub_${userId}` } ]
-                        ]
+                        inline_keyboard: inlineKeyboard
                     }
                 }
             );
@@ -685,6 +702,7 @@ bot.on('new_chat_members', async (ctx) => {
         console.error("Ошибка при входе нового участника:", e);
     }
 });
+
 
 // Проверка нажатия кнопки "Я подписался"
 bot.action(/^check_sub_(\d+)$/, async (ctx) => {
@@ -710,6 +728,43 @@ bot.action(/^check_sub_(\d+)$/, async (ctx) => {
     } catch (e) {
         console.error("Ошибка проверки подписки:", e);
         await ctx.answerCbQuery('⚠️ Ошибка проверки. Убедитесь, что бот назначен администратором в канале!', { show_alert: true });
+    }
+});
+
+// Команда для установки инфо-канала конкретного чата: /setinfotg https://t.me/chat_info_channel
+bot.command('setinfotg', async (ctx) => {
+    // Проверяем, что команду пишет админ или создатель чата
+    try {
+        const member = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
+        if (!['creator', 'administrator'].includes(member.status)) {
+            return ctx.reply('Эту команду могут использовать только администраторы чата! 🛑');
+        }
+
+        const args = ctx.message.text.split(' ');
+        if (args.length !== 2) {
+            return ctx.reply('Используй формат: /setinfotg [ссылка или юзернейм канала]');
+        }
+
+        let channelLink = args[1];
+        // Если пользователь ввел просто юзернейм без ссылки, приведем к виду https://t.me/...
+        if (!channelLink.startsWith('http') && channelLink.startsWith('@')) {
+            channelLink = `https://t.me/${channelLink.replace('@', '')}`;
+        }
+
+        const chatId = String(ctx.chat.id);
+
+        // Сохраняем инфо-канал для этого конкретного чата в базе (предполагаем, что у тебя есть модель Chat)
+        // Если модели чата нет отдельно, можно хранить в настройках бота или через общую схему
+        await ChatSettings.findOneAndUpdate(
+            { chatId: chatId },
+            { infoChannel: channelLink },
+            { upsert: true, new: true }
+        );
+
+        ctx.reply(`✅ Инфо-канал для этого чата успешно обновлен: ${channelLink} 📢`);
+    } catch (e) {
+        console.error("Ошибка при установке инфо-канала:", e);
+        ctx.reply('⚠️ Не удалось обновить инфо-канал. Убедитесь, что бот является администратором.');
     }
 });
 
