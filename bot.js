@@ -509,6 +509,21 @@ app.delete('/api/banners/delete', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Изменение порядка баннеров
+app.post('/api/banners/reorder', async (req, res) => {
+    try {
+        const { banners } = req.body; // Ожидает массив объектов в новом порядке
+        // Очищаем старые и записываем заново в нужном порядке
+        await Banner.deleteMany({});
+        if (banners && banners.length > 0) {
+            await Banner.insertMany(banners);
+        }
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 
 app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
     bot.handleUpdate(req.body, res);
