@@ -102,47 +102,48 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
 }
+/* Карточка товара */
 .product-card {
     position: relative;
     background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 14px;
-    overflow: hidden; /* Важно: чтобы размытие не вылезало за края */
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     transition: transform 0.2s ease;
 }
 
-/* Эстетичный блюр-фон под текстом карточки из картинки товара */
+/* Блюр делаем строго по высоте нижней текстовой части (примерно 45% от низа) */
 .product-card::after {
     content: '';
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 55%; /* Высота зоны блюра в нижней части */
+    height: 48px; /* Фиксированная высота зоны блюра снизу */
     background-image: var(--card-image);
     background-size: cover;
-    background-position: center;
-    filter: blur(14px); /* Тот самый мягкий размытый цвет */
-    transform: scale(1.3); /* Увеличиваем, чтобы не было белых краев */
+    background-position: bottom center; /* Берем цвета с низа картинки */
+    filter: blur(12px);
+    transform: scale(1.5);
     z-index: 1;
-    opacity: 0.65; /* Полупрозрачность */
+    opacity: 0.8;
 }
 
-/* Затемнение поверх блюра, чтобы текст всегда оставался читаемым */
+/* Затемнение тоже только для нижней зоны */
 .product-card-overlay {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 55%;
+    height: 48px;
     background: rgba(0, 0, 0, 0.45);
     z-index: 1;
 }
 
-/* Делаем так, чтобы текст и кнопки были поверх блюра */
+/* Текст и контент поверх блюра */
 .product-info {
     position: relative;
     z-index: 2;
@@ -152,6 +153,7 @@
     flex-grow: 1;
     justify-content: space-between;
 }
+
 
 .product-image-wrap {
     width: 100%;
