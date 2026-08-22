@@ -59,14 +59,15 @@ const ShopItem = mongoose.model('ShopItem', ShopItemSchema);
 const News = mongoose.model('News', NewsSchema);
 const Event = mongoose.model('Event', EventSchema);
 
-// Схема для настроек чатов (инфо-каналы и т.д.)
+// Схема для настроек чатов
 const chatSettingsSchema = new mongoose.Schema({
     chatId: { type: String, required: true, unique: true },
     infoChannel: { type: String, default: null }
 });
 
-// Безопасное объявление модели, чтобы Mongoose не ругался при перезапуске
+// Безопасное объявление: если модель уже зарегистрирована, берем её, иначе создаем
 const ChatSettings = mongoose.models.ChatSettings || mongoose.model('ChatSettings', chatSettingsSchema);
+
 
 // Функция определения сезонной валюты по дате (пункт 9)
 function getCurrentSeasonCurrencySymbol() {
