@@ -54,6 +54,48 @@ app.get('/api/shop', async (req, res) => {
     }
 });
 
+// Покупка товара в магазине
+app.post('/api/shop/buy', async (req, res) => {
+    try {
+        const { userId, itemId } = req.body;
+        const user = await User.findOne({ userId });
+        const item = await ShopItem.findOne({ itemId });
+
+        if (!user || !item) {
+            return res.status(404).json({ error: "Пользователь или товар не найден" });
+        }
+
+        // Проверяем баланс в зависимости от валюты
+        if (item.currency === 'stars') {
+            if ((user.points || 0) < item.price) {
+                return res.json({ success: false, error: "Недостаточно звезд 🌟" });
+            }
+            user.points -= item.price;
+        } else if (item.currency === 'season') {
+            if ((user.season_currency || 0) < item.price) {
+                return res.json({ success: false, error: "Недостаточно сезонной валюты 🥥" });
+            }
+            user.season_currency -= item.price;
+        }
+
+        // Добавляем товар в инвентарь или активируем рамку/титул
+        if (!user.inventory) user.inventory = [];
+        user.inventory.push(item.itemId);
+
+        if (item.type === 'frame') {
+            user.activeFrame = item.name; // Или сохраняем ID/ссылку в зависимости от логики
+        } else if (item.type === 'title') {
+            user.activeTitle = item.name;
+        }
+
+        await user.save();
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: "Ошибка при покупке" });
+    }
+});
+
+
 app.post('/api/shop/add', async (req, res) => {
     try {
         const newItem = new ShopItem(req.body);
