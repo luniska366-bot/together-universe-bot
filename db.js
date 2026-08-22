@@ -59,6 +59,15 @@ const ShopItem = mongoose.model('ShopItem', ShopItemSchema);
 const News = mongoose.model('News', NewsSchema);
 const Event = mongoose.model('Event', EventSchema);
 
+// Схема для настроек чатов (инфо-каналы и т.д.)
+const chatSettingsSchema = new mongoose.Schema({
+    chatId: { type: String, required: true, unique: true },
+    infoChannel: { type: String, default: null }
+});
+
+const ChatSettings = mongoose.model('ChatSettings', chatSettingsSchema);
+
+
 // Функция определения сезонной валюты по дате (пункт 9)
 function getCurrentSeasonCurrencySymbol() {
     const now = new Date();
@@ -125,4 +134,4 @@ const BannerSchema = new mongoose.Schema({
 const Banner = mongoose.model('Banner', BannerSchema);
 
 
-module.exports = { trackMessage, User, ShopItem, News, Event, Banner, ChatModel, getCurrentSeasonCurrencySymbol };
+module.exports = { trackMessage, User, ShopItem, News, Event, Banner, ChatSettings, ChatModel, getCurrentSeasonCurrencySymbol };
