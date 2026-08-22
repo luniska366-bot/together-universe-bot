@@ -65,8 +65,8 @@ const chatSettingsSchema = new mongoose.Schema({
     infoChannel: { type: String, default: null }
 });
 
-const ChatSettings = mongoose.model('ChatSettings', chatSettingsSchema);
-
+// Безопасное объявление модели, чтобы Mongoose не ругался при перезапуске
+const ChatSettings = mongoose.models.ChatSettings || mongoose.model('ChatSettings', chatSettingsSchema);
 
 // Функция определения сезонной валюты по дате (пункт 9)
 function getCurrentSeasonCurrencySymbol() {
