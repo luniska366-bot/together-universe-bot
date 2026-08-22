@@ -656,7 +656,10 @@ bot.command('import_msg', async (ctx) => {
 // Обработка новых участников в чате
 bot.on('new_chat_members', async (ctx) => {
     try {
-        await ctx.deleteMessage().catch(() => {});
+        // Пытаемся удалить только само системное сообщение о входе участника
+        if (ctx.message && ctx.message.message_id) {
+            await ctx.telegram.deleteMessage(ctx.chat.id, ctx.message.message_id).catch(() => {});
+        }
 
         const chatId = String(ctx.chat.id);
         
