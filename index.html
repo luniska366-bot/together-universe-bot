@@ -526,7 +526,17 @@
             loadNews();
         }
 
-                async function loadShop() {
+function translateType(type) {
+    switch(type) {
+        case 'title': return 'Титул';
+        case 'frame': return 'Рамка';
+        case 'achievement': return 'Достижение';
+        case 'merch': return 'Мерч';
+        default: return 'Товар';
+    }
+}
+
+        async function loadShop() {
             let resp = await fetch(`${API_URL}/api/shop`);
             let items = await resp.json();
             let c = document.getElementById('shopContainer');
@@ -536,21 +546,35 @@
                 return;
             }
 
-            // Оборачиваем в сетку .shop-grid для эффекта маркетплейса
+            let favorites = JSON.parse(localStorage.getItem('shop_favorites') || '[]');
             let gridHTML = '<div class="shop-grid">';
             
             items.forEach(i => {
                 let currencySign = i.currency === 'season' ? '🥥' : (i.currency === 'free' ? '🎁' : '🌟');
                 let priceText = i.currency === 'free' ? 'Бесплатно' : `${i.price} ${currencySign}`;
                 let imgTag = i.image ? `<img src="${i.image}">` : `<div style="display:flex; align-items:center; justify-content:center; height:100%; font-size:24px;">🛍</div>`;
-                let deleteBtn = (currentUserId === ADMIN_ID) ? `<button onclick="deleteShopItem('${i.itemId}')" style="background:#da3633; color:white; margin-top:6px; width:100%; font-size:11px; padding:4px;">🗑 Удалить</button>` : '';
+                let isFav = favorites.includes(i.itemId);
+                let heartColor = isFav ? '#ef4444' : 'white';
+                let typeRu = translateType(i.type);
+                let pinBadge = i.pinned ? `<span style="background:#eab308; color:black; margin-left:4px;" class="product-badge">📌 Закреплено</span>` : '';
+
+                let adminShopControls = '';
+                if (currentUserId === ADMIN_ID) {
+                    let pinText = i.pinned ? 'Открепить' : 'Закрепить 📌';
+                    adminShopControls = `
+                        <div style="display:flex; gap:4px; margin-top:6px;">
+                            <button onclick="togglePin('${i.itemId}', ${!i.pinned})" style="background:var(--border); color:var(--text-color); flex:1; font-size:11px; padding:4px;">${pinText}</button>
+                            <button onclick="deleteShopItem('${i.itemId}')" style="background:#da3633; color:white; flex:1; font-size:11px; padding:4px;">🗑 Удалить</button>
+                        </div>`;
+                }
 
                 gridHTML += `
-                    <div class="product-card">
+                    <div class="product-card" style="${i.pinned ? 'border-color: #eab308;' : ''}">
                         <div class="product-image-wrap">
                             ${imgTag}
-                            <span class="product-badge">${i.type}</span>
-                            <button class="product-favorite" onclick="this.style.color = this.style.color === 'rgb(239, 68, 68)' ? 'white' : '#ef4444'">❤️</button>
+                            <span class="product-badge">${typeRu}</span>
+                            ${pinBadge}
+                            <button class="product-favorite" onclick="toggleFavorite('${i.itemId}')" style="color: ${heartColor};">❤️</button>
                         </div>
                         <div class="product-info">
                             <div>
@@ -561,7 +585,7 @@
                                     <span class="product-price">${priceText}</span>
                                     <button class="wb-cart-btn" onclick="buyItem('${i.itemId}')" title="Купить">🛒</button>
                                 </div>
-                                ${deleteBtn}
+                                ${adminShopControls}
                             </div>
                         </div>
                     </div>`;
@@ -569,6 +593,26 @@
 
             gridHTML += '</div>';
             c.innerHTML = gridHTML;
+        }
+
+        function toggleFavorite(itemId) {
+            let favorites = JSON.parse(localStorage.getItem('shop_favorites') || '[]');
+            if (favorites.includes(itemId)) {
+                favorites = favorites.filter(id => id !== itemId);
+            } else {
+                favorites.push(itemId);
+            }
+            localStorage.setItem('shop_favorites', JSON.stringify(favorites));
+            loadShop();
+        }
+
+        async function togglePin(itemId, pinned) {
+            await fetch(`${API_URL}/api/shop/pin`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ itemId, pinned })
+            });
+            loadShop();
         }
 
         async function buyItem(itemId) {
