@@ -553,6 +553,46 @@ app.post('/api/banners/reorder', async (req, res) => {
     }
 });
 
+// Команда только для тебя: /give @username количество
+bot.command('give', async (ctx) => {
+    const adminId = 8970685551; // Твой Telegram ID
+
+    if (ctx.from.id !== adminId) {
+        return ctx.reply('У вас нет прав для использования этой команды! 🛑');
+    }
+
+    const args = ctx.message.text.split(' ');
+
+    if (args.length !== 3) {
+        return ctx.reply('Используй формат: /give @username [число очков]');
+    }
+
+    const targetUsername = args[1].replace('@', ''); // Убираем @ если есть
+    const pointsToAdd = parseInt(args[2]);
+
+    if (isNaN(pointsToAdd)) {
+        return ctx.reply('Количество очков должно быть числом!');
+    }
+
+    try {
+        // Ищем пользователя в базе по его юзернейму и добавляем очки
+        const user = await User.findOneAndUpdate(
+            { username: targetUsername }, 
+            { $inc: { points: pointsToAdd } }, 
+            { new: true }
+        );
+
+        if (user) {
+            ctx.reply(`✅ Успешно! Пользователю @${targetUsername} добавлено ${pointsToAdd} очков. Теперь у него: ${user.points} 🌟`);
+        } else {
+            ctx.reply(`❌ Пользователь @${targetUsername} не найден в базе. Пусть он сначала напишет что-нибудь в чат, чтобы бот его запомнил!`);
+        }
+    } catch (error) {
+        console.error(error);
+        ctx.reply('Произошла ошибка при выдаче очков.');
+    }
+});
+
 
 app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
     bot.handleUpdate(req.body, res);
