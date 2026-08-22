@@ -45,14 +45,6 @@ app.post('/api/set-frame', async (req, res) => {
 });
 
 // Магазин
-app.get('/api/shop', async (req, res) => {
-    try {
-        const items = await ShopItem.find({});
-        res.json(items);
-    } catch (e) {
-        res.status(500).json({ error: "Ошибка" });
-    }
-});
 
 // Покупка товара в магазине
 app.post('/api/shop/buy', async (req, res) => {
@@ -65,18 +57,72 @@ app.post('/api/shop/buy', async (req, res) => {
             return res.status(404).json({ error: "Пользователь или товар не найден" });
         }
 
-        // Проверяем баланс в зависимости от валюты
-        if (item.currency === 'stars') {
+        // Проверяем баланс (если товар не бесплатный)
+        if (item.currency === 'stars' && item.price > 0) {
             if ((user.points || 0) < item.price) {
                 return res.json({ success: false, error: "Недостаточно звезд 🌟" });
             }
             user.points -= item.price;
-        } else if (item.currency === 'season') {
+        } else if (item.currency === 'season' && item.price > 0) {
             if ((user.season_currency || 0) < item.price) {
                 return res.json({ success: false, error: "Недостаточно сезонной валюты 🥥" });
             }
             user.season_currency -= item.price;
         }
+
+        // Проверяем, не куплен ли уже товар
+        if (!user.inventory) user.inventory = [];
+        if (user.inventory.includes(item.itemId)) {
+            return res.json({ success: false, error: "У вас уже есть этот товар!" });
+        }
+        user.inventory.push(item.itemId);
+
+        // Применяем свойства в зависимости от типа товара
+        if (item.type === 'frame') {
+            user.activeFrame = item.name;
+        } else if (item.type === 'title') {
+            user.activeTitle = item.name;
+        } else if (item.type === 'achievement') {
+            if (!user.achievements) user.achievements = [];
+            if (!user.achievements.includes(item.name)) {
+                user.achievements.push(item.name);
+            }
+        }
+
+        await user.save();
+
+        // Отправляем уведомление в ЛС пользователю
+        try {
+            await bot.telegram.sendMessage(userId, `🎉 Поздравляем с покупкой!\n\nВы успешно приобрели: *${item.name}* 🛒`, { parse_mode: 'Markdown' });
+        } catch (e) {}
+
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: "Ошибка при покупке" });
+    }
+});
+
+// Обновленный эндпоинт получения магазина с сортировкой по закреплению
+app.get('/api/shop', async (req, res) => {
+    try {
+        // Сначала закрепленные (pinned: true), потом остальные
+        const items = await ShopItem.find({}).sort({ pinned: -1, _id: -1 });
+        res.json(items);
+    } catch (e) {
+        res.status(500).json({ error: "Ошибка" });
+    }
+});
+
+// Эндпоинт для закрепления/открепления товара
+app.post('/api/shop/pin', async (req, res) => {
+    try {
+        const { itemId, pinned } = req.body;
+        await ShopItem.updateOne({ itemId }, { pinned });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: "Ошибка закрепления" });
+    }
+});      
 
         // Добавляем товар в инвентарь или активируем рамку/титул
         if (!user.inventory) user.inventory = [];
