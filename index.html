@@ -417,23 +417,31 @@
         }
 
         async function addShopItem() {
-            const currencyVal = document.getElementById('shopCurrency').value;
-            const data = {
-                itemId: 'item_' + Date.now(),
-                name: document.getElementById('shopName').value,
-                price: currencyVal === 'free' ? 0 : Number(document.ind('shopPrice').value),
-                currency: currencyVal,
-                type: document.getElementById('shopType').value,
-                accessType: document.getElementById('shopAccess').value,
-                image: document.getElementById('shopImage').value || null
-            };
-            // Небольшая поправка для безошибочного считывания цены
-            data.price = currencyVal === 'free' ? 0 : Number(document.getElementById('shopPrice').value);
-            if (!data.name) return alert('Заполни название товара!');
-            await fetch(`${API_URL}/api/shop/add`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
-            alert('Товар создан!');
-            loadShop();
-        }
+    const currencyVal = document.getElementById('shopCurrency').value;
+    const priceVal = currencyVal === 'free' ? 0 : Number(document.getElementById('shopPrice').value);
+    
+    const data = {
+        itemId: 'item_' + Date.now(),
+        name: document.getElementById('shopName').value,
+        price: priceVal,
+        currency: currencyVal,
+        type: document.getElementById('shopType').value,
+        accessType: document.getElementById('shopAccess').value,
+        image: document.getElementById('shopImage').value || null
+    };
+
+    if (!data.name) return alert('Заполни название товара!');
+    
+    await fetch(`${API_URL}/api/shop/add`, { 
+        method: 'POST', 
+        headers: {'Content-Type':'application/json'}, 
+        body: JSON.stringify(data) 
+    });
+    
+    alert('Товар создан!');
+    loadShop();
+}
+
 
         async function addEvent() {
             const data = {
