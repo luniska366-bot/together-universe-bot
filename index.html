@@ -653,8 +653,10 @@ function translateType(type) {
                 }
 
                 gridHTML += `
-                    <div class="product-card" style="${i.pinned ? 'border-color: #eab308;' : ''}">
-                        <div class="product-image-wrap">
+    <div class="product-card" style="--card-image: url('${i.image}'); ${i.pinned ? 'border-color: #eab308;' : ''}">
+        <div class="product-card-overlay"></div>
+        <div class="product-image-wrap">
+
                             ${imgTag}
                             <span class="product-badge">${typeRu}</span>
                             ${pinBadge}
