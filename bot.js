@@ -125,24 +125,6 @@ app.post('/api/shop/pin', async (req, res) => {
     }
 });      
 
-        // Добавляем товар в инвентарь или активируем рамку/титул
-        if (!user.inventory) user.inventory = [];
-        user.inventory.push(item.itemId);
-
-        if (item.type === 'frame') {
-            user.activeFrame = item.name; // Или сохраняем ID/ссылку в зависимости от логики
-        } else if (item.type === 'title') {
-            user.activeTitle = item.name;
-        }
-
-        await user.save();
-        res.json({ success: true });
-    } catch (e) {
-        res.status(500).json({ error: "Ошибка при покупке" });
-    }
-});
-
-
 app.post('/api/shop/add', async (req, res) => {
     try {
         const newItem = new ShopItem(req.body);
