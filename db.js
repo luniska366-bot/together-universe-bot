@@ -120,11 +120,7 @@ async function trackMessage(userId, username, chatId) {
     return user;
 }
 
-const ChatSchema = new mongoose.Schema({
-    chatId: { type: String, required: true, unique: true },
-    linkedChannel: { type: String, default: null }
-});
-const ChatModel = mongoose.model('ChatSettings', ChatSchema);
+
 
 const BannerSchema = new mongoose.Schema({
     id: { type: String, required: true, unique: true },
@@ -135,4 +131,4 @@ const BannerSchema = new mongoose.Schema({
 const Banner = mongoose.model('Banner', BannerSchema);
 
 
-module.exports = { trackMessage, User, ShopItem, News, Event, Banner, ChatSettings, ChatModel, getCurrentSeasonCurrencySymbol };
+module.exports = { trackMessage, User, ShopItem, News, Event, Banner, ChatSettings, getCurrentSeasonCurrencySymbol };
