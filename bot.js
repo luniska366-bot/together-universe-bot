@@ -653,6 +653,66 @@ bot.command('import_msg', async (ctx) => {
     }
 });
 
+// Обработка новых участников в чате
+bot.on('new_chat_members', async (ctx) => {
+    try {
+        // Удаляем системное сообщение о входе, чтобы чат был чище
+        await ctx.deleteMessage().catch(() => {});
+
+        for (let member of ctx.message.new_chat_members) {
+            // Игнорируем самого бота
+            if (member.id === ctx.botInfo.id) continue;
+
+            const userId = member.id;
+            const name = member.first_name || 'Новичок';
+
+            // Отправляем приветствие с кнопкой проверки подписки
+            let welcomeMsg = await ctx.reply(
+                `👋 Привет, [${name}](tg://user?id=${userId})!\n\n` +
+                `💡 Для отправки сообщений в этом чате необходимо подписаться на наш канал.`,
+                {
+                    parse_mode: 'Markdown',
+                    reply_markup: {
+                        inline_keyboard: [
+                            [ { text: '📢 Подписаться на канал', url: 'https://t.me/togetheruniversechats' } ],
+                            [ { text: '✅ Я подписался', callback_data: `check_sub_${userId}` } ]
+                        ]
+                    }
+                }
+            );
+        }
+    } catch (e) {
+        console.error("Ошибка при входе нового участника:", e);
+    }
+});
+
+// Проверка нажатия кнопки "Я подписался"
+bot.action(/^check_sub_(\d+)$/, async (ctx) => {
+    const targetUserId = Number(ctx.match[1]);
+    
+    // Проверяем, что на кнопку нажал именно тот человек, который зашел
+    if (ctx.from.id !== targetUserId) {
+        return ctx.answerCbQuery('Эту кнопку может нажать только новичок! 🛑', { show_alert: true });
+    }
+
+    const CHANNEL_ID = '@togetheruniversechats'; // Юзернейм канала
+
+    try {
+        // Проверяем статус пользователя в канале
+        const member = await ctx.telegram.getChatMember(CHANNEL_ID, targetUserId);
+        const isSubscribed = ['creator', 'administrator', 'member'].includes(member.status);
+
+        if (isSubscribed) {
+            await ctx.editMessageText('✅ Подписка подтверждена! Добро пожаловать в чат, теперь вы можете писать сообщения. 🎉');
+        } else {
+            await ctx.answerCbQuery('❌ Вы еще не подписались на канал!', { show_alert: true });
+        }
+    } catch (e) {
+        console.error("Ошибка проверки подписки:", e);
+        await ctx.answerCbQuery('⚠️ Ошибка проверки. Убедитесь, что бот назначен администратором в канале!', { show_alert: true });
+    }
+});
+
 
 app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
     bot.handleUpdate(req.body, res);
