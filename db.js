@@ -115,4 +115,13 @@ const ChatSchema = new mongoose.Schema({
 });
 const ChatModel = mongoose.model('ChatSettings', ChatSchema);
 
-module.exports = { trackMessage, User, ShopItem, News, Event, ChatModel, getCurrentSeasonCurrencySymbol };
+const BannerSchema = new mongoose.Schema({
+    id: { type: String, required: true, unique: true },
+    imageUrl: { type: String, required: true },
+    link: { type: String, default: null }
+});
+
+const Banner = mongoose.model('Banner', BannerSchema);
+
+
+module.exports = { trackMessage, User, ShopItem, News, Event, Banner, ChatModel, getCurrentSeasonCurrencySymbol };
