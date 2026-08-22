@@ -53,9 +53,10 @@ app.post('/api/shop/buy', async (req, res) => {
         const user = await User.findOne({ userId });
         const item = await ShopItem.findOne({ itemId });
 
-        if (!user || !item) {
+                if (!user || !item) {
             return res.status(404).json({ error: "Пользователь или товар не найден" });
         }
+
 
         // Проверяем баланс (если товар не бесплатный)
         if (item.currency === 'stars' && item.price > 0) {
