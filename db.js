@@ -24,12 +24,13 @@ const UserSchema = new mongoose.Schema({
 });
 
 const ShopItemSchema = new mongoose.Schema({
-    itemId: { type: String, required: true, unique: true },
+        itemId: { type: String, required: true, unique: true },
     name: String,
     price: Number,
-    currency: { type: String, default: 'stars' },    // 'stars' или сезонная
+    currency: { type: String, default: 'stars' }, // 'stars' или сезонная
     image: String,
-    type: String,                                    // 'frame', 'title', 'achievement', 'merch', 'other'
+    pinned: { type: Boolean, default: false },
+    type: { type: String, default: 'other' } // 'frame', 'title', 'achievement', 'merch', 'other'
     accessType: { type: String, default: 'permanent' }, // 'permanent', 'temporary', 'limited'
     eventId: { type: String, default: null }
 });
