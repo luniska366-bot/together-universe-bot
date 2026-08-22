@@ -30,7 +30,7 @@ const ShopItemSchema = new mongoose.Schema({
     currency: { type: String, default: 'stars' }, // 'stars' или сезонная
     image: String,
     pinned: { type: Boolean, default: false },
-    type: { type: String, default: 'other' } // 'frame', 'title', 'achievement', 'merch', 'other'
+    type: { type: String, default: 'other' }, // 'frame', 'title', 'achievement', 'merch', 'other'
     accessType: { type: String, default: 'permanent' }, // 'permanent', 'temporary', 'limited'
     eventId: { type: String, default: null }
 });
