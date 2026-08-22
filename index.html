@@ -74,6 +74,28 @@
         .section { display: none; background: var(--card-bg); padding: 18px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 15px; }
         .section.active { display: block; }
         .card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 14px; border-radius: 12px; margin-bottom: 12px; }
+
+/* Индикаторы слайдера (точки) */
+.slider-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+    margin-bottom: 15px;
+}
+.slider-dot {
+    height: 6px;
+    width: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.slider-dot.active {
+    width: 24px;
+    background: var(--accent);
+}
+
     </style>
 </head>
 <body data-theme="dark">
@@ -96,6 +118,8 @@
             <div class="banner-slide" style="background: var(--accent-gradient); display:flex; align-items:center; justify-content:center; color:white; font-weight:bold;">Загрузка баннеров... 🚀</div>
         </div>
     </div>
+    <!-- Индикаторы (точки) -->
+    <div class="slider-dots" id="sliderDots"></div>
 
     <!-- Главная (Новости) -->
     <div id="feed" class="section active">
@@ -251,26 +275,104 @@
         }
 
         // --- Логика WB-слайдера с автолистанием ---
+           let bannersData = []; // Сохраняем массив баннеров глобально
+
         async function loadBanners() {
             try {
                 let resp = await fetch(`${API_URL}/api/banners`);
-                let banners = await resp.json();
+                bannersData = await resp.json();
                 let wrapper = document.getElementById('bannerWrapper');
-                if (!banners.length) {
+                let dotsContainer = document.getElementById('sliderDots');
+                
+                if (!bannersData.length) {
                     wrapper.innerHTML = `<div class="banner-slide" style="background: var(--accent-gradient); display:flex; align-items:center; justify-content:center; color:white; font-weight:bold;">Добавь баннеры в админке! 🚀</div>`;
+                    dotsContainer.innerHTML = '';
                     return;
                 }
+
                 wrapper.innerHTML = '';
-                banners.forEach(b => {
+                dotsContainer.innerHTML = '';
+
+                bannersData.forEach((b, index) => {
                     wrapper.innerHTML += `<div class="banner-slide" style="background-image: url('${b.imageUrl}')"></div>`;
+                    dotsContainer.innerHTML += `<div class="slider-dot ${index === 0 ? 'active' : ''}" onclick="goToSlide(${index})"></div>`;
                 });
 
                 if (slideInterval) clearInterval(slideInterval);
                 slideInterval = setInterval(() => {
-                    currentSlide = (currentSlide + 1) % banners.length;
-                    wrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
+                    currentSlide = (currentSlide + 1) % bannersData.length;
+                    updateSlidePosition();
                 }, 5000);
             } catch(e) {}
+        }
+
+        function updateSlidePosition() {
+            let wrapper = document.getElementById('bannerWrapper');
+            wrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
+            
+            let dots = document.querySelectorAll('.slider-dot');
+            dots.forEach((dot, index) => {
+                if (index === currentSlide) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        function goToSlide(index) {
+            currentSlide = index;
+            updateSlidePosition();
+            // Сбрасываем таймер при ручном переключении
+            if (slideInterval) clearInterval(slideInterval);
+            slideInterval = setInterval(() => {
+                currentSlide = (currentSlide + 1) % bannersData.length;
+                updateSlidePosition();
+            }, 5000);
+        }
+
+        async function loadAdminBanners() {
+            let resp = await fetch(`${API_URL}/api/banners`);
+            bannersData = await resp.json();
+            let c = document.getElementById('adminBannersContainer');
+            c.innerHTML = bannersData.length ? '' : 'Нет баннеров.';
+            
+            bannersData.forEach((b, index) => {
+                let upBtn = index > 0 ? `<button onclick="moveBanner('${b.id}', 'up')" style="background:var(--border); padding:4px 6px; font-size:11px;">⬆️</button>` : '';
+                let downBtn = index < bannersData.length - 1 ? `<button onclick="moveBanner('${b.id}', 'down')" style="background:var(--border); padding:4px 6px; font-size:11px;">⬇️</button>` : '';
+
+                c.innerHTML += `
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; background:rgba(255,255,255,0.05); padding:6px; border-radius:8px;">
+                        <img src="${b.imageUrl}" style="width:50px; height:25px; object-fit:cover; border-radius:4px;">
+                        <div style="display:flex; gap:4px;">
+                            ${upBtn}
+                            ${downBtn}
+                            <button onclick="deleteBanner('${b.id}')" style="background:#da3633; color:white; padding:4px 8px; font-size:11px;">Удалить</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        async function moveBanner(id, direction) {
+            let index = bannersData.findIndex(b => b.id === id);
+            if (index === -1) return;
+            let targetIndex = direction === 'up' ? index - 1 : index + 1;
+            if (targetIndex < 0 || targetIndex >= bannersData.length) return;
+
+            // Меняем местами в массиве
+            let temp = bannersData[index];
+            bannersData[index] = bannersData[targetIndex];
+            bannersData[targetIndex] = temp;
+
+            // Отправляем новый порядок на сервер
+            await fetch(`${API_URL}/api/banners/reorder`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ banners: bannersData })
+            });
+
+            loadBanners();
+            loadAdminBanners();
         }
 
         async function addBanner() {
@@ -282,20 +384,6 @@
             document.getElementById('banImg').value = '';
             loadBanners();
             loadAdminBanners();
-        }
-
-        async function loadAdminBanners() {
-            let resp = await fetch(`${API_URL}/api/banners`);
-            let banners = await resp.json();
-            let c = document.getElementById('adminBannersContainer');
-            c.innerHTML = banners.length ? '' : 'Нет баннеров.';
-            banners.forEach(b => {
-                c.innerHTML += `
-                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; background:rgba(255,255,255,0.05); padding:6px; border-radius:8px;">
-                        <img src="${b.imageUrl}" style="width:60px; height:30px; object-fit:cover; border-radius:4px;">
-                        <button onclick="deleteBanner('${b.id}')" style="background:#da3633; color:white; padding:4px 8px; font-size:12px;">Удалить</button>
-                    </div>`;
-            });
         }
 
         async function deleteBanner(id) {
