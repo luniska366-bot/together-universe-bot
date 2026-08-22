@@ -484,10 +484,7 @@ bot.on('text', async (ctx, next) => {
     if (ctx.chat.type !== 'private') {
         const userId = String(ctx.from.id);
         const user = await User.findOne({ userId });
-        if (user && user.verified === false) {
-            try { await ctx.deleteMessage(); } catch (e) {}
-            return;
-        }
+        
 
         const username = ctx.from.username || ctx.from.first_name;
         const chatId = String(ctx.chat.id);
