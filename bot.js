@@ -593,6 +593,66 @@ bot.command('give', async (ctx) => {
     }
 });
 
+// Команда для переноса сообщений из Ириса: /import_msg @username [кол-во сообщений]
+bot.command('import_msg', async (ctx) => {
+    const adminId = 8970685551; // Твой Telegram ID
+
+    if (ctx.from.id !== adminId) {
+        return ctx.reply('У вас нет прав для использования этой команды! 🛑');
+    }
+
+    const args = ctx.message.text.split(' ');
+
+    if (args.length !== 3) {
+        return ctx.reply('Используй формат: /import_msg @username [количество]');
+    }
+
+    const targetUsername = args[1].replace('@', '');
+    const msgToAdd = parseInt(args[2]);
+
+    if (isNaN(msgToAdd)) {
+        return ctx.reply('Количество сообщений должно быть числом!');
+    }
+
+    const chatId = String(ctx.chat.id);
+
+    try {
+        let user = await User.findOne({ username: targetUsername });
+        
+        if (!user) {
+            return ctx.reply(`❌ Пользователь @${targetUsername} не найден в базе. Пусть сначала напишет что-нибудь в чат!`);
+        }
+
+        // Начисляем сообщения в общие очки и сезонную валюту
+        user.points = (user.points || 0) + msgToAdd;
+        user.season_currency = (user.season_currency || 0) + msgToAdd;
+
+        // Пересчитываем левел (по твоей логике: 1 сообщение = 10 очков для прогрессии, 500 очков = 1 левел)
+        const totalPointsForLevel = user.points * 10;
+        user.level = Math.floor(totalPointsForLevel / 500) + 1;
+
+        // Инициализируем объект чатов, если его не было
+        if (!user.chats) user.chats = {};
+        if (!user.chats[chatId]) {
+            user.chats[chatId] = { day: 0, week: 0, month: 0, all: 0 };
+        }
+
+        // Добавляем сообщения в статистику этого чата
+        user.chats[chatId].day += msgToAdd;
+        user.chats[chatId].week += msgToAdd;
+        user.chats[chatId].month += msgToAdd;
+        user.chats[chatId].all += msgToAdd;
+
+        user.markModified('chats');
+        await user.save();
+
+        ctx.reply(`✅ Успешно! Пользователю @${targetUsername} перенесено ${msgToAdd} сообщений из Ириса. Теперь у него в этом чате всего сообщений: ${user.chats[chatId].all} 💬 (и ${user.points} 🌟 очков)`);
+    } catch (error) {
+        console.error(error);
+        ctx.reply('Произошла ошибка при переносе сообщений.');
+    }
+});
+
 
 app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
     bot.handleUpdate(req.body, res);
