@@ -253,40 +253,99 @@ async function notifyAchievement(user, achName, chatId, botInstance) {
 
 // --- ТЕКСТОВЫЕ КОМАНДЫ И КАЛЛ (ЗАЗЫВАЛА) ---
 
-// Финальный исправленный КАЛЛ без падений разметки
-bot.hears(/^калл(?:\s+(.+))?/i, async (ctx) => {
+// --- СИСТЕМА КАЛЛОВ (ПО ПАРТИЯМ ПО 5 ЧЕЛОВЕК) И АНРЕГ ---
+
+// Команда анрег (отключить каллы на 24 часа)
+bot.hears(/^анрег$/i, async (ctx) => {
     if (ctx.chat.type === 'private') return ctx.reply('Эта команда работает только в чатах!');
-    const callText = ctx.match[1] || 'Внимание всем!';
-    const chatId = ctx.chat.id.toString();
+    const userId = String(ctx.from.id);
 
     try {
-        const allUsers = await User.find({});
-        let tags = '';
-        
-        allUsers.forEach(u => {
-            if (u.chats && u.chats[chatId] && u.username) {
-                tags += `@${u.username} `;
-            }
-        });
-
-        if (tags.trim()) {
-            // Отправляем без parse_mode, чтобы спецсимволы в именах не ломали сообщение
-            await ctx.reply(`📢 КАЛЛ: ${callText}\n\n${tags}`);
-        } else {
-            await ctx.reply('В этом чате пока никто не написал ни одного сообщения, некого тегать!');
+        let user = await User.findOne({ userId });
+        if (!user) {
+            user = new User({ userId, username: ctx.from.username || ctx.from.first_name });
         }
+
+        // Ставим блок на 24 часа
+        const unregTime = Date.now() + 24 * 60 * 60 * 1000;
+        user.unregUntil = unregTime;
+        await user.save();
+
+        ctx.reply(`🔕 @${user.username || 'Резидент'}, вы успешно ушли в «анрег» на 24 часа! Вас больше не будут тегать в каллах.`);
     } catch (e) {
-        console.error("ТОЧНАЯ ОШИБКА КАЛЛА:", e);
-        await ctx.reply(`Ошибка калла: ${e.message}`);
+        console.error("Ошибка анрега:", e);
+        ctx.reply('⚠️ Не удалось оформить анрег.');
     }
 });
 
+// Умный калл по всем участникам чата (партиями по 5 человек)
+bot.hears(/^калл(?:\s+(.+))?/i, async (ctx) => {
+    if (ctx.chat.type === 'private') return ctx.reply('Эта команда работает только в чатах!');
+    const callText = ctx.match[1] || 'Внимание всем!';
+    const chatId = String(ctx.chat.id);
+    const now = Date.now();
+
+    try {
+        // 1. Получаем ВСЕХ участников, которые вообще есть в базе данных бота
+        const allUsers = await User.find({});
+        
+        let validUsers = [];
+        for (const u of allUsers) {
+            // Проверяем, не стоит ли у пользователя активный анрег (прошло ли 24 часа)
+            if (u.unregUntil && u.unregUntil > now) {
+                continue; // Пропускаем тех, кто отдыхает
+            }
+
+            // Достаем юзернейм
+            if (u.username) {
+                // Проверяем, состоит ли пользователь в этом чате реально через Telegram API
+                try {
+                    const memberInfo = await ctx.telegram.getChatMember(chatId, u.userId);
+                    // Если он не покинул чат и не забанен
+                    if (!['left', 'kicked'].includes(memberInfo.status)) {
+                        validUsers.push(`@${u.username}`);
+                    }
+                } catch (err) {
+                    // Если бот не смог проверить (например, юзер долго не писал), 
+                    // но он есть в базе и писал раньше — всё равно добавим на всякий случай
+                    validUsers.push(`@${u.username}`);
+                }
+            }
+        }
+
+        // Убираем дубликаты на всякий случай
+        validUsers = [...new Set(validUsers)];
+
+        if (validUsers.length === 0) {
+            return ctx.reply('❌ В базе нет активных пользователей для калла!');
+        }
+
+        await ctx.reply(`📢 *КАЛЛ:* ${callText}\n(Рассылаю теги партиями по 5 человек...)`, { parse_mode: 'Markdown' });
+
+        // 2. Делим список пользователей на пачки по 5 человек
+        const chunkSize = 5;
+        for (let i = 0; i < validUsers.length; i += chunkSize) {
+            const chunk = validUsers.slice(i, i + chunkSize);
+            const tagsString = chunk.join(' ');
+
+            // Отправляем пачку сообщением
+            await ctx.reply(`💬 Пакет ${Math.floor(i / chunkSize) + 1}:\n${tagsString}`);
+
+            // Делаем небольшую паузу в 1 секунду между сообщениями, чтобы Telegram не заспамил чат
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+    } catch (e) {
+        console.error("ОШИБКА КАЛЛА:", e);
+        ctx.reply(`⚠️ Произошла ошибка при выполнении калла: ${e.message}`);
+    }
+});
+
+// Дублируем для синонима /callall
 bot.hears(/^\/callall(?:\s+(.+))?/i, async (ctx) => {
     ctx.message.text = ctx.message.text.replace('/callall', 'калл');
     return bot.handleUpdate(ctx.update);
 });
-
-
 
 
 // 13. Текстовые команды
