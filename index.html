@@ -475,7 +475,7 @@
         <button onclick="switchTab('events', this); loadEvents();">⚡ Ивенты</button>
         <button onclick="switchTab('tops', this); loadLeaderboard('all');">🏆 Топы</button>
         <button onclick="switchTab('profile', this);">👤 Профиль</button>
-        <button onclick="switchTab('achievements', this); loadAchievementsTab();">🌟 Ачивки</button>
+        <button onclick="switchTab('achievements', this); if(typeof loadAchievementsTab === 'function') loadAchievementsTab();">🏅 Ачивки</button>
     </div>
 
 
