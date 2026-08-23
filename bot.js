@@ -482,22 +482,41 @@ bot.on('text', async (ctx, next) => {
     if (ctx.message.text.startsWith('/')) return next();
 
     if (ctx.chat.type !== 'private') {
-        const userId = String(ctx.from.id);
-        const user = await User.findOne({ userId });
-        
+        try {
+            // Пропускаем создателя и администраторов чата
+            const memberInfo = await ctx.telegram.getChatMember(ctx.chat.id, ctx.from.id);
+            if (['creator', 'administrator'].includes(memberInfo.status)) {
+                const userId = String(ctx.from.id);
+                const username = ctx.from.username || ctx.from.first_name;
+                const chatId = String(ctx.chat.id);
+                await trackMessage(userId, username, chatId);
+                return next();
+            }
 
+            // Проверяем подписку на главный канал для обычных участников
+            const mainSub = await ctx.telegram.getChatMember('@togetheruniversechats', ctx.from.id);
+            if (['left', 'kicked'].includes(mainSub.status)) {
+                try { await ctx.deleteMessage(); } catch (e) {} // Удаляем сообщение того, кто не подписан
+                return;
+            }
+        } catch (e) {}
+
+        // Если всё проверено и ок, трекаем сообщение и достижения
+        const userId = String(ctx.from.id);
         const username = ctx.from.username || ctx.from.first_name;
         const chatId = String(ctx.chat.id);
         
         await trackMessage(userId, username, chatId);
         const updatedUser = await User.findOne({ userId });
-        const totalAll = updatedUser.chats[chatId].all;
-        const hour = new Date().getHours();
-        
-        await checkAchievements(updatedUser, chatId, bot, totalAll, hour);
+        if (updatedUser && updatedUser.chats && updatedUser.chats[chatId]) {
+            const totalAll = updatedUser.chats[chatId].all;
+            const hour = new Date().getHours();
+            await checkAchievements(updatedUser, chatId, bot, totalAll, hour);
+        }
     }
     return next();
 });
+
 
 app.delete('/api/news/delete', async (req, res) => {
     try {
@@ -653,48 +672,39 @@ bot.command('import_msg', async (ctx) => {
 // Обработка новых участников в чате
 bot.on('new_chat_members', async (ctx) => {
     try {
-        // Пытаемся удалить только само системное сообщение о входе участника
-        if (ctx.message && ctx.message.message_id) {
-            await ctx.telegram.deleteMessage(ctx.chat.id, ctx.message.message_id).catch(() => {});
-        }
-
-        const chatId = String(ctx.chat.id);
-        
-        // Ищем кастомный инфо-канал для этого чата в базе данных
-        let chatSettings = null;
-        try {
-            chatSettings = await ChatSettings.findOne({ chatId: chatId });
-        } catch (err) {
-            console.error("Ошибка чтения настроек чата:", err);
-        }
-
-        // Формируем клавиатуру для приветствия
-        const inlineKeyboard = [
-            [ { text: '📢 Подписаться на основной канал', url: 'https://t.me/togetheruniversechats' } ]
-        ];
-
-        // Если для этого чата задан свой инфо-канал, добавляем его второй кнопкой!
-        if (chatSettings && chatSettings.infoChannel) {
-            inlineKeyboard.push([ { text: '📌 Инфо этого чата', url: chatSettings.infoChannel } ]);
-        }
-
-        // Кнопка подтверждения подписки
         for (let member of ctx.message.new_chat_members) {
             if (member.id === ctx.botInfo.id) continue;
 
             const userId = member.id;
             const name = member.first_name || 'Новичок';
+            const chatId = String(ctx.chat.id);
+
+            
+
+            // Ищем привязанный инфо-канал чата
+            let chatSettings = null;
+            try {
+                chatSettings = await ChatSettings.findOne({ chatId: chatId });
+            } catch (err) {}
+
+            // Формируем кнопки
+            const inlineKeyboard = [
+                [ { text: '📢 Подписаться на основной канал', url: 'https://t.me/togetheruniversechats' } ]
+            ];
+
+            if (chatSettings && chatSettings.infoChannel) {
+                inlineKeyboard.push([ { text: '📌 Инфо этого чата', url: chatSettings.infoChannel } ]);
+            }
 
             inlineKeyboard.push([ { text: '✅ Я подписался', callback_data: `check_sub_${userId}` } ]);
 
+            // 2. Отправляем сообщение с требованием подписки
             await ctx.reply(
                 `👋 Привет, [${name}](tg://user?id=${userId})!\n\n` +
-                `💡 Для отправки сообщений в этом чате необходимо подписаться на наш канал.`,
+                `💡 Для отправки сообщений в этом чате необходимо подписаться на каналы ниже и нажать кнопку подтверждения.`,
                 {
                     parse_mode: 'Markdown',
-                    reply_markup: {
-                        inline_keyboard: inlineKeyboard
-                    }
+                    reply_markup: { inline_keyboard: inlineKeyboard }
                 }
             );
         }
@@ -703,33 +713,63 @@ bot.on('new_chat_members', async (ctx) => {
     }
 });
 
-
-// Проверка нажатия кнопки "Я подписался"
 bot.action(/^check_sub_(\d+)$/, async (ctx) => {
     const targetUserId = Number(ctx.match[1]);
     
-    // Проверяем, что на кнопку нажал именно тот человек, который зашел
-    if (ctx.from.id !== targetUserId) {
-        return ctx.answerCbQuery('Эту кнопку может нажать только новичок! 🛑', { show_alert: true });
+    // Нажать может только сам пользователь или ты (админ)
+    if (ctx.from.id !== targetUserId && ctx.from.id !== 8970685551) {
+        return ctx.answerCbQuery('Эту кнопку может нажать только сам участник! 🛑', { show_alert: true });
     }
 
-    const CHANNEL_ID = '@togetheruniversechats'; // Юзернейм канала
+    const chatId = String(ctx.chat.id);
+    const MAIN_CHANNEL = '@togetheruniversechats';
 
     try {
-        // Проверяем статус пользователя в канале
-        const member = await ctx.telegram.getChatMember(CHANNEL_ID, targetUserId);
-        const isSubscribed = ['creator', 'administrator', 'member'].includes(member.status);
+        // 1. Проверяем главный канал
+        const mainMember = await ctx.telegram.getChatMember(MAIN_CHANNEL, targetUserId);
+        const isMainSubscribed = ['creator', 'administrator', 'member'].includes(mainMember.status);
 
-        if (isSubscribed) {
-            await ctx.editMessageText('✅ Подписка подтверждена! Добро пожаловать в чат, теперь вы можете писать сообщения. 🎉');
-        } else {
-            await ctx.answerCbQuery('❌ Вы еще не подписались на канал!', { show_alert: true });
+        if (!isMainSubscribed) {
+            return ctx.answerCbQuery('❌ Вы еще не подписались на главный канал!', { show_alert: true });
         }
+
+        // 2. Проверяем инфо-канал чата (если он у этого чата настроен)
+        let chatSettings = await ChatSettings.findOne({ chatId: chatId });
+        if (chatSettings && chatSettings.infoChannel) {
+            // Извлекаем юзернейм из ссылки (например, из https://t.me/durov делаем @durov)
+            let infoChan = chatSettings.infoChannel;
+            if (infoChan.includes('t.me/')) {
+                infoChan = '@' + infoChan.split('t.me/').pop().replace('/', '');
+            }
+
+            try {
+                const infoMember = await ctx.telegram.getChatMember(infoChan, targetUserId);
+                const isInfoSubscribed = ['creator', 'administrator', 'member'].includes(infoMember.status);
+                if (!isInfoSubscribed) {
+                    return ctx.answerCbQuery(`❌ Вы не подписались на инфо-канал этого чата (${infoChan})!`, { show_alert: true });
+                }
+            } catch (err) {
+                console.error("Ошибка проверки инфо-канала:", err);
+            }
+        }
+
+        // 3. Если везде подписан — возвращаем права на отправку сообщений (снимаем мут)
+        await ctx.telegram.restrictChatMember(ctx.chat.id, targetUserId, {
+            permissions: { 
+                can_send_messages: true, 
+                can_send_media_messages: true, 
+                can_send_other_messages: true,
+                can_add_web_page_previews: true 
+            }
+        });
+
+        await ctx.editMessageText('✅ Подписка подтверждена! Добро пожаловать в чат, ограничения сняты. 🎉');
     } catch (e) {
         console.error("Ошибка проверки подписки:", e);
-        await ctx.answerCbQuery('⚠️ Ошибка проверки. Убедитесь, что бот назначен администратором в канале!', { show_alert: true });
+        await ctx.answerCbQuery('⚠️ Ошибка проверки. Убедитесь, что бот назначен администратором в каналах!', { show_alert: true });
     }
 });
+
 
 // Команда для установки инфо-канала конкретного чата: /setinfotg https://t.me/chat_info_channel
 bot.command('setinfotg', async (ctx) => {
