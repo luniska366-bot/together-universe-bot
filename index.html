@@ -341,9 +341,14 @@
         <div id="topsContainer"><div class="card">Загрузка чартов... 🎶</div></div>
     </div>
 
-        <!-- Профиль -->
+            <!-- Профиль -->
     <div id="profile" class="section">
-        <h3 style="margin-top: 0; margin-bottom: 15px;">👤 Профиль резидента</h3>
+        <!-- Красивый заголовок профиля -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; padding: 0 4px;">
+            <h3 style="margin: 0; font-size: 20px; background: linear-gradient(135deg, var(--accent), #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px;">
+                ✨ Профиль Юниверса
+            </h3>
+        </div>
         
         <!-- Карточка-паспорт айдола -->
         <div style="background: linear-gradient(135deg, rgba(88, 166, 255, 0.1), rgba(168, 85, 247, 0.1)); border: 1px solid var(--accent); border-radius: 16px; padding: 16px; margin-bottom: 14px; position: relative; overflow: hidden;">
@@ -351,18 +356,14 @@
             <!-- Шапка профиля внутри карточки -->
             <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
                 <div class="avatar" id="profileAvatarContainer" style="width: 56px; height: 56px; font-size: 22px;"><span id="profileAvatarLetter">M</span></div>
-                <div>
-                    <div id="profileUserName" style="font-weight: 700; font-size: 18px; margin-bottom: 4px;">Макар</div>
-                    <div style="font-size: 13px; opacity: 0.9; display: flex; gap: 8px; align-items: center;">
-                        <span style="background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 8px;">🌟 <span id="profileUserBalance">0</span></span>
-                        <span style="background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 8px;">🥥 <span id="profileUserSeasonCurrency">0</span></span>
-                        <span style="background: rgba(88, 166, 255, 0.15); color: var(--accent); padding: 2px 8px; border-radius: 8px; font-weight: 600;">Лев. <span id="profileUserLevel">1</span></span>
+                <div style="flex-grow: 1; overflow: hidden;">
+                    <div id="profileUserName" style="font-weight: 700; font-size: 18px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Имя</div>
+                    <div style="font-size: 12px; opacity: 0.9; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                        <span style="background: rgba(255,255,255,0.08); padding: 2px 7px; border-radius: 8px;">🌟 <span id="profileUserBalance">0</span></span>
+                        <span style="background: rgba(255,255,255,0.08); padding: 2px 7px; border-radius: 8px;">🥥 <span id="profileUserSeasonCurrency">0</span></span>
+                        <span style="background: rgba(88, 166, 255, 0.15); color: var(--accent); padding: 2px 7px; border-radius: 8px; font-weight: 600;">Уровень <span id="profileUserLevel">1</span></span>
                     </div>
                 </div>
-            </div>
-
-            <div style="font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
-                ✨ ПАСПОРТ ЮНИВЕРСА АКТИВЕН
             </div>
 
             <!-- Характеристики -->
@@ -377,9 +378,12 @@
                 </div>
             </div>
 
-            <!-- Достижения (теперь чипсами) -->
+            <!-- Достижения (чипсами) с кнопкой перехода к базе -->
             <div style="background: rgba(255,255,255,0.04); padding: 10px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px;">
-                <div style="font-size: 11px; opacity: 0.6; margin-bottom: 6px;">🏆 Достижения</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div style="font-size: 11px; opacity: 0.6;">🏆 Полученные достижения</div>
+                    <button onclick="openAchievementsBase()" style="background: none; border: none; color: var(--accent); font-size: 11px; font-weight: 600; cursor: pointer; padding: 0;">База всех ✨</button>
+                </div>
                 <div id="profileAchContainer" style="display: flex; flex-wrap: wrap; gap: 4px;">
                     <span style="font-size: 12px; opacity: 0.7;">Пока нет</span>
                 </div>
@@ -455,6 +459,29 @@
         <button onclick="switchTab('profile', this)">👤 Профиль</button>
     </div>
 
+    <!-- Модальное окно: База всех достижений -->
+    <div id="achievementsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
+        <div style="background: var(--bg); border: 1px solid var(--accent); width: 100%; max-width: 400px; border-radius: 20px; padding: 20px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                <h3 style="margin: 0; font-size: 18px;">🏆 База достижений Юниверса</h3>
+                <button onclick="closeAchievementsBase()" style="background: none; border: none; font-size: 18px; color: var(--text); cursor: pointer;">✕</button>
+            </div>
+            
+            <div style="font-size: 12px; opacity: 0.7; margin-bottom: 12px;">
+                Собирай ачивки, сияй как суперзвезда и открывай новые уровни! ✨
+            </div>
+
+            <!-- Список достижений (будет заполняться динамически) -->
+            <div id="achievementsCatalogList" style="overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; flex-grow: 1;">
+                <!-- Сюда скрипт подгрузит карточки -->
+            </div>
+
+            <button onclick="closeAchievementsBase()" style="margin-top: 14px; width: 100%; padding: 10px; border-radius: 10px; background: var(--accent); color: white; border: none; font-weight: 600;">Закрыть</button>
+        </div>
+    </div>
+
+
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
@@ -489,44 +516,96 @@
         }
         initUser();
 
-                async function refreshUserData() {
+        // Обновленная функция синхронизации данных (теперь подтягивает и имя из Telegram / шапки!)
+        async function refreshUserData() {
             try {
                 let resp = await fetch(`${API_URL}/api/user-data?userId=${currentUserId}`);
                 let data = await resp.json();
                 
-                // Обновляем шапку сайта
+                // Шапка сайта
                 document.getElementById('userBalance').innerText = data.points || 0;
                 document.getElementById('userSeasonCurrency').innerText = data.season_currency || 0;
                 document.getElementById('userLevel').innerText = data.level || 1;
 
-                // Обновляем наш новый крутой профиль
+                // Берем имя из элемента шапки (или из Telegram, если доступно)
+                let actualName = document.getElementById('userName') ? document.getElementById('userName').innerText : 'Звезда';
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) {
+                    actualName = tg.initDataUnsafe.user.first_name;
+                }
+                document.getElementById('profileUserName').innerText = actualName;
+
+                // Профиль Юниверса
                 document.getElementById('profileUserBalance').innerText = data.points || 0;
                 document.getElementById('profileUserSeasonCurrency').innerText = data.season_currency || 0;
                 document.getElementById('profileUserLevel').innerText = data.level || 1;
                 document.getElementById('profileTitleVal').innerText = data.activeTitle || 'Нет';
                 document.getElementById('profileFrameVal').innerText = data.activeFrame || 'Нет';
 
-                // Рендерим достижения красивыми тегами-чипсами
+                // Рендерим полученные ачивки чипсами
                 let achContainer = document.getElementById('profileAchContainer');
-                if (data.achievements && data.achievements.length > 0) {
-                    achContainer.innerHTML = data.achievements.map(ach => 
+                window.userAchievementsList = data.achievements || []; // Сохраняем для базы
+                
+                if (window.userAchievementsList.length > 0) {
+                    achContainer.innerHTML = window.userAchievementsList.map(ach => 
                         `<span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; border: 1px solid rgba(168, 85, 247, 0.3);">🏆 ${ach}</span>`
                     ).join('');
                 } else {
                     achContainer.innerHTML = `<span style="font-size: 12px; opacity: 0.7;">Пока нет</span>`;
                 }
 
-                // Синхронизируем аватарку в профиль тоже
+                // Аватарка
                 if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.photo_url) {
                     let avatarUrl = tg.initDataUnsafe.user.photo_url;
-                    document.getElementById('profileAvatarContainer').innerHTML = `<img src="${avatarUrl}">`;
+                    document.getElementById('profileAvatarContainer').innerHTML = `<img src="${avatarUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
                 } else {
-                    document.getElementById('profileAvatarLetter').innerText = document.getElementById('userName').innerText.charAt(0).toUpperCase();
+                    document.getElementById('profileAvatarLetter').innerText = actualName.charAt(0).toUpperCase();
                 }
 
             } catch(e) {}
         }
 
+        // --- ЛОГИКА БАЗЫ ДОСТИЖЕНИЙ ---
+        // Полный каталог всех ачивок в системе (можешь дополнять своими)
+        const ALL_ACHIEVEMENTS_CATALOG = [
+            { name: "Новичок Юниверс", desc: "Сделай свои первые шаги в приложении и активируй профиль.", hint: "Активнее заходи в мини-ап и выполняй первые действия." },
+            { name: "Утро", desc: "Зайди в приложение в утренние часы.", hint: "Загляни в мини-ап до 12:00 дня." },
+            { name: "Продвинутый Юниверс", desc: "Прояви активность и накопи первые значимые успехи.", hint: "Повышай уровень и собирай баллы." },
+            { name: "Крутой Юниверс", desc: "Докажи всем, что ты настоящая поп-звезда чартов.", hint: "Активно участвуй в ивентах и топах." },
+            { name: "Удивительный Юниверс", desc: "Секретное достижение для самых преданных резидентов.", hint: "Исследуй все вкладки и фишки приложения." },
+            { name: "Разговорчивый Юниверс", desc: "Будь на волне общения и активности.", hint: "Взаимодействуй с функциями мини-апа чаще." },
+            { name: "Про-Юниверс", desc: "Высший титул мастерства для истинных легенд.", hint: "Достигни высоких уровней и собери топ-коллекцию." }
+        ];
+
+        function openAchievementsBase() {
+            let container = document.getElementById('achievementsCatalogList');
+            let userAch = window.userAchievementsList || [];
+
+            container.innerHTML = ALL_ACHIEVEMENTS_CATALOG.map(ach => {
+                let isUnlocked = userAch.includes(ach.name);
+                let statusBg = isUnlocked ? "rgba(168, 85, 247, 0.15)" : "rgba(255, 255, 255, 0.03)";
+                let borderColor = isUnlocked ? "rgba(168, 85, 247, 0.4)" : "var(--border)";
+                let statusText = isUnlocked ? "✅ Получено" : "🔒 Заблокировано";
+                let statusColor = isUnlocked ? "#c084fc" : "opacity: 0.5";
+
+                return `
+                    <div style="background: ${statusBg}; border: 1px solid ${borderColor}; border-radius: 12px; padding: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span style="font-weight: 600; font-size: 14px;">🏆 ${ach.name}</span>
+                            <span style="font-size: 11px; font-weight: 600; ${statusColor}">${statusText}</span>
+                        </div>
+                        <div style="font-size: 12px; opacity: 0.8; margin-bottom: 6px;">${ach.desc}</div>
+                        <div style="font-size: 11px; opacity: 0.5; font-style: italic;">💡 Как получить: ${ach.hint}</div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('achievementsModal').style.display = 'flex';
+        }
+
+        function closeAchievementsBase() {
+            document.getElementById('achievementsModal').style.display = 'none';
+        }
+              
 
         // --- Логика WB-слайдера с автолистанием ---
            let bannersData = []; // Сохраняем массив баннеров глобально
