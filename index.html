@@ -564,11 +564,9 @@
 
         // Переход из профиля на вкладку достижений
                 function openAchievementsBase() {
+            // Находим кнопку ачивок на нижней панели, чтобы подсветить её активной, если нужно
             let dockButtons = document.querySelectorAll('#dockMenu button');
             let targetBtn = Array.from(dockButtons).find(btn => btn.innerText.includes('Ачивки'));
-            switchTab('achievements', targetBtn);
-            loadAchievementsTab(); // Принудительно загружаем достижения
-        }
 
             
             // Вызываем стандартное переключение вкладки приложения
