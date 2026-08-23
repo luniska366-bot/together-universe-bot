@@ -396,6 +396,24 @@
         </div>
     </div>
 
+    <!-- Вкладка: База достижений -->
+    <div id="achievements" class="section" style="display: none;">
+        <div style="margin-bottom: 15px; padding: 0 4px;">
+            <h3 style="margin: 0; font-size: 20px; background: linear-gradient(135deg, var(--accent), #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px;">
+                🏆 База достижений
+            </h3>
+            <div style="font-size: 13px; opacity: 0.7; margin-top: 4px;">
+                Собирай ачивки, сияй как суперзвезда и открывай новые уровни! ✨
+            </div>
+        </div>
+
+        <!-- Контейнер со списком достижений -->
+        <div id="achievementsTabList" style="display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px;">
+            <!-- Сюда скрипт подгрузит карточки -->
+        </div>
+    </div>
+
+
 
     <!-- Панель Администратора -->
     <div id="admin" class="section">
@@ -450,36 +468,16 @@
         </div>
     </div>
 
-    <!-- Нижняя панель («островок») -->
+        <!-- Нижняя панель («островок») -->
     <div class="glass-dock" id="dockMenu">
         <button class="active" onclick="switchTab('feed', this); loadNews();">📰 Главная</button>
         <button onclick="switchTab('shop', this); loadShop();">🛍 Магазин</button>
         <button onclick="switchTab('events', this); loadEvents();">⚡ Ивенты</button>
         <button onclick="switchTab('tops', this); loadLeaderboard('all');">🏆 Топы</button>
-        <button onclick="switchTab('profile', this)">👤 Профиль</button>
+        <button onclick="switchTab('profile', this);">👤 Профиль</button>
+        <button onclick="switchTab('achievements', this); loadAchievementsTab();">🌟 Ачивки</button>
     </div>
 
-    <!-- Модальное окно: База всех достижений -->
-    <div id="achievementsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
-        <div style="background: var(--bg); border: 1px solid var(--accent); width: 100%; max-width: 400px; border-radius: 20px; padding: 20px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-                <h3 style="margin: 0; font-size: 18px;">🏆 База достижений Юниверса</h3>
-                <button onclick="closeAchievementsBase()" style="background: none; border: none; font-size: 18px; color: var(--text); cursor: pointer;">✕</button>
-            </div>
-            
-            <div style="font-size: 12px; opacity: 0.7; margin-bottom: 12px;">
-                Собирай ачивки, сияй как суперзвезда и открывай новые уровни! ✨
-            </div>
-
-            <!-- Список достижений (будет заполняться динамически) -->
-            <div id="achievementsCatalogList" style="overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; flex-grow: 1;">
-                <!-- Сюда скрипт подгрузит карточки -->
-            </div>
-
-            <button onclick="closeAchievementsBase()" style="margin-top: 14px; width: 100%; padding: 10px; border-radius: 10px; background: var(--accent); color: white; border: none; font-weight: 600;">Закрыть</button>
-        </div>
-    </div>
 
 
     <script>
@@ -564,8 +562,18 @@
             } catch(e) {}
         }
 
-        // --- ЛОГИКА БАЗЫ ДОСТИЖЕНИЙ ---
-        // Полный каталог всех ачивок в системе (можешь дополнять своими)
+        // Переход из профиля на вкладку достижений
+        function openAchievementsBase() {
+            // Находим кнопку ачивок на нижней панели, чтобы подсветить её активной, если нужно
+            let dockButtons = document.querySelectorAll('#dockMenu button');
+            let targetBtn = Array.from(dockButtons).find(btn => btn.innerText.includes('Ачивки'));
+            
+            // Вызываем стандартное переключение вкладки приложения
+            switchTab('achievements', targetBtn);
+            loadAchievementsTab();
+        }
+
+        // Рендеринг базы достижений во вкладке
         const ALL_ACHIEVEMENTS_CATALOG = [
             { name: "Новичок Юниверс", desc: "Сделай свои первые шаги в приложении и активируй профиль.", hint: "Активнее заходи в мини-ап и выполняй первые действия." },
             { name: "Утро", desc: "Зайди в приложение в утренние часы.", hint: "Загляни в мини-ап до 12:00 дня." },
@@ -576,31 +584,39 @@
             { name: "Про-Юниверс", desc: "Высший титул мастерства для истинных легенд.", hint: "Достигни высоких уровней и собери топ-коллекцию." }
         ];
 
-        function openAchievementsBase() {
-            let container = document.getElementById('achievementsCatalogList');
+        function loadAchievementsTab() {
+            let container = document.getElementById('achievementsTabList');
             let userAch = window.userAchievementsList || [];
+
+            if (!container) return;
 
             container.innerHTML = ALL_ACHIEVEMENTS_CATALOG.map(ach => {
                 let isUnlocked = userAch.includes(ach.name);
-                let statusBg = isUnlocked ? "rgba(168, 85, 247, 0.15)" : "rgba(255, 255, 255, 0.03)";
-                let borderColor = isUnlocked ? "rgba(168, 85, 247, 0.4)" : "var(--border)";
-                let statusText = isUnlocked ? "✅ Получено" : "🔒 Заблокировано";
-                let statusColor = isUnlocked ? "#c084fc" : "opacity: 0.5";
+                // Делаем карточки аккуратными в стиле приложения с легким градиентом
+                let bgStyle = isUnlocked 
+                    ? "background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(88, 166, 255, 0.08)); border: 1px solid rgba(168, 85, 247, 0.3);" 
+                    : "background: var(--card-bg); border: 1px solid var(--border); opacity: 0.7;";
+                
+                let statusBadge = isUnlocked 
+                    ? `<span style="background: rgba(168, 85, 247, 0.2); color: #c084fc; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">✅ Получено</span>` 
+                    : `<span style="background: rgba(255, 255, 255, 0.05); opacity: 0.6; padding: 2px 8px; border-radius: 6px; font-size: 11px;">🔒 Закрыто</span>`;
 
                 return `
-                    <div style="background: ${statusBg}; border: 1px solid ${borderColor}; border-radius: 12px; padding: 12px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                            <span style="font-weight: 600; font-size: 14px;">🏆 ${ach.name}</span>
-                            <span style="font-size: 11px; font-weight: 600; ${statusColor}">${statusText}</span>
+                    <div style="${bgStyle} border-radius: 14px; padding: 14px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <span style="font-weight: 600; font-size: 15px;">🏆 ${ach.name}</span>
+                            ${statusBadge}
                         </div>
-                        <div style="font-size: 12px; opacity: 0.8; margin-bottom: 6px;">${ach.desc}</div>
-                        <div style="font-size: 11px; opacity: 0.5; font-style: italic;">💡 Как получить: ${ach.hint}</div>
+                        <div style="font-size: 13px; opacity: 0.9; margin-bottom: 8px;">${ach.desc}</div>
+                        <div style="font-size: 12px; opacity: 0.6; font-style: italic; background: rgba(0,0,0,0.15); padding: 6px 10px; border-radius: 8px;">
+                            💡 Как получить: ${ach.hint}
+                        </div>
                     </div>
                 `;
             }).join('');
-
-            document.getElementById('achievementsModal').style.display = 'flex';
         }
+
+        
 
         function closeAchievementsBase() {
             document.getElementById('achievementsModal').style.display = 'none';
