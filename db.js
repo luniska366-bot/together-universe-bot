@@ -20,8 +20,10 @@ const UserSchema = new mongoose.Schema({
     achievements: { type: Array, default: [] },      // Полученные ачивки (ID)
     activeTitle: { type: String, default: null },    // Надетый титул
     activeFrame: { type: String, default: null },    // Надетая рамка
-    verified: { type: Boolean, default: false }      // Прошла ли капча
+    verified: { type: Boolean, default: false },     // Прошла ли капча
+    unregUntil: { type: Number, default: 0 }         // Время окончания анрега (таймер)
 });
+
 
 const ShopItemSchema = new mongoose.Schema({
         itemId: { type: String, required: true, unique: true },
