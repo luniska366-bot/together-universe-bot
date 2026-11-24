@@ -875,7 +875,7 @@ app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', async () => {
     console.log(`Сервер запущен на порту ${PORT}!`);
-    bot.launch({ dropPendingUpdates: true });
+    
     console.log("Webhook установлен!");
 });
 
