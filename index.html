@@ -285,6 +285,30 @@
     z-index: 1;
 }
 
+/* Для десктопной версии Telegram Web */
+@media (min-width: 768px) {
+    html, body {
+        height: 100vh;
+        overflow: hidden;
+    }
+    
+    /* Основной контейнер приложения */
+    .app-container { /* или body, если нет обертки */
+        height: calc(100vh + 100px); /* Добавляем запас высоты */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Если используешь фиксированный док */
+    .glass-dock {
+        position: fixed !important;
+        bottom: 15px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        z-index: 9999 !important;
+    }
+}
+
 
     </style>
 </head>
@@ -512,6 +536,14 @@
             loadBanners();
             loadNews();
         }
+
+// Если это десктопная версия Telegram Web
+    if (tg.platform === 'desktop') {
+        // Принудительно разрешаем скролл
+        document.body.style.overflow = 'auto';
+        document.body.style.height = 'auto';
+    }
+}
         initUser();
 
         // Обновленная функция синхронизации данных (теперь подтягивает и имя из Telegram / шапки!)
