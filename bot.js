@@ -878,3 +878,13 @@ app.listen(PORT, '0.0.0.0', async () => {
     bot.launch({ dropPendingUpdates: true });
     console.log("Webhook установлен!");
 });
+
+// Запускаем бот в режиме polling (опроса)
+bot.launch({
+    dropPendingUpdates: true // Очищает очередь старых сообщений при старте
+}).then(() => {
+    console.log('Бот запущен в режиме polling!');
+}).catch((err) => {
+    console.error('Ошибка запуска бота:', err);
+    process.exit(1);
+});
